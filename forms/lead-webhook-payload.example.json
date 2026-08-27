@@ -1,0 +1,35 @@
+{
+  "source": "Instant Sewer & Drain Answers",
+  "subdomain": "answers.protrenchless.com",
+  "lead": {
+    "name": "Jane Example",
+    "phone": "+14842065551",
+    "email": "jane@example.com",
+    "property_address": "123 Main St, West Chester, PA",
+    "user_type": "Homeowner",
+    "problem_type": "Basement drain backup",
+    "urgency": "High",
+    "preferred_appointment_time": "Tomorrow afternoon",
+    "consent_to_contact": true
+  },
+  "tool_session": {
+    "tool_name": "symptom_checker",
+    "symptoms": [
+      "Multiple fixtures",
+      "Sewage smell",
+      "Prior repeated cleanings"
+    ],
+    "recommended_next_step": "Sewer camera inspection with locate",
+    "main_site_link_clicked": "https://protrenchless.com/sewer-camera-inspection/"
+  },
+  "uploads": [
+    {
+      "filename": "sewer-camera-video.mp4",
+      "type": "video/mp4"
+    },
+    {
+      "filename": "repair-estimate.pdf",
+      "type": "application/pdf"
+    }
+  ]
+}

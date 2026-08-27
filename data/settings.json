@@ -1,0 +1,77 @@
+{
+  "updatedAt": "2026-07-14T09:54:07.502Z",
+  "aiEnabled": true,
+  "uploadsEnabled": true,
+  "leadsEnabled": true,
+  "eventTrackingEnabled": true,
+  "requireLeadConsent": true,
+  "showChatWidget": true,
+  "businessName": "Pro Trenchless Services",
+  "businessPhone": "(484) 206-5551",
+  "mainSiteUrl": "https://protrenchless.com",
+  "aiSiteUrl": "https://answers.protrenchless.com",
+  "emergencyPhone": "(484) 206-5551",
+  "dashboardNote": "Review leads quickly, check uploaded files, and keep only active modules enabled.",
+  "modules": {
+    "symptom-checker": {
+      "enabled": true,
+      "title": "Sewer Symptom Checker",
+      "primaryCta": "Schedule a sewer camera inspection with locate"
+    },
+    "emergency-risk-check": {
+      "enabled": true,
+      "title": "Emergency Sewer Risk Check",
+      "primaryCta": "Call or request emergency service"
+    },
+    "estimate-review": {
+      "enabled": true,
+      "title": "Sewer Estimate Comparison",
+      "primaryCta": "Upload estimate for second opinion"
+    },
+    "sewer-camera-review": {
+      "enabled": true,
+      "title": "Sewer Camera Video Review Intake",
+      "primaryCta": "Upload camera footage for professional review"
+    },
+    "free-second-opinion": {
+      "enabled": true,
+      "title": "Free Sewer Second Opinion",
+      "primaryCta": "Request a Pro Trenchless second opinion"
+    },
+    "cost-estimator": {
+      "enabled": true,
+      "title": "Sewer Repair Cost Estimator",
+      "primaryCta": "Book inspection before final pricing"
+    },
+    "repair-options": {
+      "enabled": true,
+      "title": "Sewer Repair Option Explainer",
+      "primaryCta": "Compare repair options with Pro Trenchless"
+    },
+    "realtor-sewer-risk-tool": {
+      "enabled": true,
+      "title": "Realtor Sewer Risk Tool",
+      "primaryCta": "Schedule a realtor sewer inspection"
+    },
+    "property-manager-drain-triage": {
+      "enabled": true,
+      "title": "Property Manager Drain Triage",
+      "primaryCta": "Request property manager sewer service"
+    },
+    "restaurant-grease-line-risk": {
+      "enabled": true,
+      "title": "Restaurant Grease-Line Risk Tool",
+      "primaryCta": "Request restaurant drain service"
+    },
+    "home-inspector-support": {
+      "enabled": true,
+      "title": "Home Inspector Sewer Scope Support",
+      "primaryCta": "Request sewer scope support"
+    },
+    "commercial-property-review": {
+      "enabled": true,
+      "title": "Commercial Property Sewer Review",
+      "primaryCta": "Request commercial sewer review"
+    }
+  }
+}

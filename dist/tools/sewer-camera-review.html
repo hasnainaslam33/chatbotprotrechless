@@ -1,0 +1,70 @@
+<script>
+  fetch("../header.html")
+    .then(response => response.text())
+    .then(data => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data, 'text/html');
+      document.head.append(...Array.from(doc.head.childNodes));
+      document.getElementById("header").innerHTML = doc.body.innerHTML;
+    });
+</script>
+
+<div id="header"></div>
+
+
+<main>
+  <section class="tool-hero">
+    <div class="container">
+      <span class="kicker">Powered by Pro Trenchless Services</span>
+      <h1 class="h1-small">Sewer Camera Video Review Intake</h1>
+      <p class="lead">Share the footage markers, pipe material, defect location, depth, locate status, flow test status, and whether the camera reached the city main or septic connection.</p>
+    </div>
+  </section>
+  <section>
+    <div class="container module-layout">
+      <div class="panel">
+        
+<h2>Guided intake</h2>
+<p class="mini">This page is ready for a real AI API connection. The current version captures the right information and shows the expected output structure.</p>
+<div class="form-section">
+  <div class="field"><label>Video upload</label><input placeholder="Add details"></div><div class="field"><label>Start and end footage markers</label><input placeholder="Add details"></div><div class="field"><label>Pipe material if known</label><input placeholder="Add details"></div><div class="field"><label>Location of defect</label><input placeholder="Add details"></div><div class="field"><label>Depth if known</label><input placeholder="Add details"></div><div class="field"><label>Was the line located?</label><input placeholder="Add details"></div><div class="field"><label>Was flow tested?</label><input placeholder="Add details"></div><div class="field"><label>Did the camera reach the city main or septic connection?</label><input placeholder="Add details"></div>
+  <div class="field"><label>Upload files</label><input type="file" multiple></div>
+  <div class="field"><label>Describe what happened</label><textarea placeholder="Explain symptoms, contractor recommendation, or what the camera footage showed."></textarea></div>
+  <button class="btn" type="button" onclick="showResult('Medium','Review ready for professional verification','The intake includes the information Pro Trenchless needs to review the issue, explain missing details, and recommend the right next step without guessing.', ['This module should return: Roots, Offset joint, Belly, Broken pipe, Cracked pipe, Collapsed pipe, Heavy scale, Grease, Foreign object, Poor pitch, Failed repair.','If the issue is recurring or the estimate is vague, request a second opinion before approving major work.','Final diagnosis and pricing require professional inspection and verification.'], [{text:'Learn more about sewer camera inspections in Southeastern Pennsylvania.',href:'https://protrenchless.com/sewer-camera-inspection/'},{text:'Compare trenchless sewer repair and excavation.',href:'https://protrenchless.com/trenchless-sewer-repair/'},{text:'Schedule a Pro Trenchless sewer inspection.',href:'#lead-form'}])">Get AI recommendation</button>
+</div>
+<h3>Expected AI output</h3>
+<ul><li>Roots</li><li>Offset joint</li><li>Belly</li><li>Broken pipe</li><li>Cracked pipe</li><li>Collapsed pipe</li><li>Heavy scale</li><li>Grease</li><li>Foreign object</li><li>Poor pitch</li><li>Failed repair</li></ul>
+
+        <div id="result-box" class="result-box"></div>
+      </div>
+      
+<div class="panel lead-box" id="lead-form">
+  <h2>Send this to Pro Trenchless</h2>
+  <p class="mini">Ask for booking only after the tool gives value. This form is ready to connect to Gravity Forms, Tally, HubSpot, GoHighLevel, Zapier, ServiceTitan, or a custom webhook.</p>
+  <div class="form-section">
+    <div class="field"><label>Name</label><input placeholder="Full name"></div>
+    <div class="field"><label>Phone</label><input placeholder="Best phone number"></div>
+    <div class="field"><label>Email</label><input placeholder="Email address"></div>
+    <div class="field"><label>Property address or service area</label><input placeholder="Street, city, ZIP"></div>
+    <div class="field"><label>Preferred appointment time</label><input placeholder="Morning, afternoon, urgent, or specific time"></div>
+    <div class="field"><label>Upload video, estimate, report, or photos</label><input type="file" multiple></div>
+    <label class="check"><input type="checkbox"> I consent to be contacted by Pro Trenchless Services about this request.</label>
+    <button class="btn" type="button">Request Review</button>
+  </div>
+  <p class="disclaimer">This AI tool provides educational guidance only. Final diagnosis, repair method, pricing, code compliance, permits, and safety decisions require professional inspection and verification.</p>
+</div>
+
+    </div>
+  </section>
+</main>
+
+
+<footer class="footer">
+  <div class="container">
+    <strong>Instant Sewer & Drain Answers</strong> is an educational decision tool powered by Pro Trenchless Services. This AI tool provides educational guidance only. Final diagnosis, repair method, pricing, code compliance, permits, and safety decisions require professional inspection and verification.
+  </div>
+</footer>
+<script src="/js/app.js"></script>
+
+</body>
+</html>

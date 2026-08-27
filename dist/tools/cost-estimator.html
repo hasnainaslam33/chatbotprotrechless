@@ -1,0 +1,69 @@
+<script>
+  fetch("../header.html")
+    .then(response => response.text())
+    .then(data => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data, 'text/html');
+      document.head.append(...Array.from(doc.head.childNodes));
+      document.getElementById("header").innerHTML = doc.body.innerHTML;
+    });
+</script>
+
+<div id="header"></div>
+
+
+<main>
+  <section class="tool-hero">
+    <div class="container">
+      <span class="kicker">Powered by Pro Trenchless Services</span>
+      <h1 class="h1-small">Sewer Repair Cost Estimator</h1>
+      <p class="lead">Use ranges, not guaranteed prices. Final pricing always needs camera inspection, locate, code and permit review, and professional verification.</p>
+    </div>
+  </section>
+  <section>
+    <div class="container module-layout">
+      <div class="panel">
+        
+<h2>Enter basic repair planning details</h2>
+<p class="mini">This gives a rough planning range only. It is not a quote.</p>
+<div class="form-section">
+  <div class="field"><label>Approximate pipe length in feet</label><input id="length" type="number" min="0" placeholder="Example: 60"></div>
+  <div class="field"><label>Approximate depth in feet</label><input id="depth" type="number" min="0" placeholder="Example: 6"></div>
+  <div class="field"><label>Surface type above the line</label><select id="surface"><option value="grass">Grass</option><option value="driveway">Driveway</option><option value="sidewalk">Sidewalk</option><option value="street">Street</option><option value="basement floor">Basement floor</option></select></div>
+  <div class="field"><label>Known defect or concern</label><select><option>Unknown</option><option>Roots</option><option>Offset joint</option><option>Belly</option><option>Broken pipe</option><option>Collapsed pipe</option><option>Heavy scale</option><option>Grease</option><option>Poor pitch</option></select></div>
+  <button class="btn" type="button" onclick="runCostEstimator()">Get AI cost estimate</button>
+</div>
+
+        <div id="result-box" class="result-box"></div>
+      </div>
+      
+<div class="panel lead-box" id="lead-form">
+  <h2>Send this to Pro Trenchless</h2>
+  <p class="mini">Ask for booking only after the tool gives value. This form is ready to connect to Gravity Forms, Tally, HubSpot, GoHighLevel, Zapier, ServiceTitan, or a custom webhook.</p>
+  <div class="form-section">
+    <div class="field"><label>Name</label><input placeholder="Full name"></div>
+    <div class="field"><label>Phone</label><input placeholder="Best phone number"></div>
+    <div class="field"><label>Email</label><input placeholder="Email address"></div>
+    <div class="field"><label>Property address or service area</label><input placeholder="Street, city, ZIP"></div>
+    <div class="field"><label>Preferred appointment time</label><input placeholder="Morning, afternoon, urgent, or specific time"></div>
+    <div class="field"><label>Upload video, estimate, report, or photos</label><input type="file" multiple></div>
+    <label class="check"><input type="checkbox"> I consent to be contacted by Pro Trenchless Services about this request.</label>
+    <button class="btn" type="button">Request Review</button>
+  </div>
+  <p class="disclaimer">This AI tool provides educational guidance only. Final diagnosis, repair method, pricing, code compliance, permits, and safety decisions require professional inspection and verification.</p>
+</div>
+
+    </div>
+  </section>
+</main>
+
+
+<footer class="footer">
+  <div class="container">
+    <strong>Instant Sewer & Drain Answers</strong> is an educational decision tool powered by Pro Trenchless Services. This AI tool provides educational guidance only. Final diagnosis, repair method, pricing, code compliance, permits, and safety decisions require professional inspection and verification.
+  </div>
+</footer>
+<script src="/js/app.js"></script>
+
+</body>
+</html>

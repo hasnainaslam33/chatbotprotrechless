@@ -1,0 +1,182 @@
+<script>
+  fetch("header.html")
+    .then(response => response.text())
+    .then(data => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data, 'text/html');
+      document.head.append(...Array.from(doc.head.childNodes));
+      document.getElementById("header").innerHTML = doc.body.innerHTML;
+    });
+</script>
+
+<div id="header"></div>
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="kicker">AI Sewer Decision Center</span>
+        <h1>Instant Sewer & Drain Answers</h1>
+        <p class="lead">Describe your sewer or drain problem, upload a camera video or estimate, and get guided next steps before approving repair work.</p>
+        <div class="hero-actions">
+          <a class="btn" href="/tools/symptom-checker.html">Check My Sewer Problem</a>
+          <a class="btn secondary" href="/tools/sewer-camera-review.html">Upload My Camera Video</a>
+          <a class="btn secondary" href="/tools/estimate-review.html">Compare My Estimate</a>
+          <a class="btn warn" href="/tools/emergency-risk-check.html">Emergency Backup Risk Check</a>
+        </div>
+        <div class="trust-row">
+          <span>For homeowners</span><span>Realtors</span><span>Property managers</span><span>Restaurants</span><span>Plumbers</span><span>Inspectors</span>
+        </div>
+      </div>
+      <div class="panel chat-card">
+        <div class="chat-top"><strong>Start here</strong><span class="status"><span class="dot"></span> Guidance available</span></div>
+        <div class="bubble ai">First, tell us who you are so the guidance fits your situation.</div>
+        <div class="select-grid">
+          <button class="choice" onclick="selectUserType('Homeowner')">Homeowner</button>
+          <button class="choice" onclick="selectUserType('Realtor')">Realtor</button>
+          <button class="choice" onclick="selectUserType('Property Manager')">Property Manager</button>
+          <button class="choice" onclick="selectUserType('Restaurant Owner')">Restaurant Owner</button>
+          <button class="choice" onclick="selectUserType('Plumber')">Plumber</button>
+          <button class="choice" onclick="selectUserType('Home Inspector')">Home Inspector</button>
+          <button class="choice" onclick="selectUserType('Commercial Property Owner')">Commercial Property Owner</button>
+          <button class="choice" onclick="selectUserType('Other')">Other</button>
+        </div>
+        <div class="bubble user" id="selected-user-bubble" style="display:none"></div>
+        <div class="bubble ai" id="benefit-output"></div>
+        <a class="btn" href="/tools/symptom-checker.html">Continue to guided checker</a>
+        <p class="disclaimer">AI guidance is educational only. Final diagnosis and pricing require professional inspection and verification.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2 class="section-title">Choose the right sewer tool</h2>
+      <p class="section-copy">The goal is simple: do not just clear the drain. Find the cause, compare options, and avoid approving the wrong repair.</p>
+      <div class="tool-grid">
+        <article class="tool-card"><div class="icon">🧭</div><h3>Symptom Checker</h3><p>Answer a few questions about backups, odors, trees, rain, pipe age, and prior cleanings.</p><a class="small-link" href="/tools/symptom-checker.html">Check my sewer problem</a></article>
+        <article class="tool-card"><div class="icon">📹</div><h3>Camera Video Review Intake</h3><p>Upload or describe scope footage so Pro Trenchless can review the defect with context.</p><a class="small-link" href="/tools/sewer-camera-review.html">Upload camera video details</a></article>
+        <article class="tool-card"><div class="icon">📄</div><h3>Estimate Comparison</h3><p>Review an estimate for missing scope details, unclear restoration, warranty gaps, or change-order risk.</p><a class="small-link" href="/tools/estimate-review.html">Compare my estimate</a></article>
+        <article class="tool-card"><div class="icon">💬</div><h3>Free Second Opinion</h3><p>Share an estimate, inspection report, symptoms, photos, or written recommendation before spending thousands.</p><a class="small-link" href="/tools/free-second-opinion.html">Get a second opinion</a></article>
+        <article class="tool-card"><div class="icon">💵</div><h3>Cost Estimator</h3><p>Use planning ranges based on length, depth, surface, pipe material, access, and urgency.</p><a class="small-link" href="/tools/cost-estimator.html">Estimate my planning range</a></article>
+        <article class="tool-card"><div class="icon">🚨</div><h3>Emergency Risk Check</h3><p>Spot urgent signals like active sewage, multiple fixtures, water near electrical, and restaurant shutdown risk.</p><a class="small-link" href="/tools/emergency-risk-check.html">Check emergency risk</a></article>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container split">
+      <div class="callout">
+        <h2>Don’t just clear it. Find the cause.</h2>
+        <p>Every completed journey should move the user toward a smarter next step: camera inspection, locate, cleaning, jetting, lining, pipe bursting, repair review, or replacement planning.</p>
+        <a class="btn secondary" href="https://protrenchless.com/sewer-camera-inspection/">Learn more about sewer camera inspections</a>
+      </div>
+      <div class="steps">
+        <div class="step"><span class="step-num">1</span><div><strong>Give value first</strong><br><span class="mini">Explain likely causes, risk level, and what information is missing before asking for a booking.</span></div></div>
+        <div class="step"><span class="step-num">2</span><div><strong>Capture qualified leads</strong><br><span class="mini">Name, phone, email, address, user type, urgency, files, appointment preference, and contact consent.</span></div></div>
+        <div class="step"><span class="step-num">3</span><div><strong>Feed the main site</strong><br><span class="mini">Link results to Pro Trenchless service pages and turn anonymized questions into reviewed SEO content.</span></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+
+ <!-- Company <footer class="footer">
+  <div class="container">
+    <strong>Instant Sewer & Drain Answers</strong> is an educational decision tool powered by Pro Trenchless Services. This AI tool provides educational guidance only. Final diagnosis, repair method, pricing, code compliance, permits, and safety decisions require professional inspection and verification.
+  </div>
+   <div class="container">
+    <strong>Instant Sewer & Drain Answers</strong> is an educational decision tool powered by Pro Trenchless Services. This AI tool provides educational guidance only. Final diagnosis, repair method, pricing, code compliance, permits, and safety decisions require professional inspection and verification.
+  </div>
+</footer>-->
+
+<footer class="footer">
+
+    <!-- Top Strip -->
+    <div class="footer-top">
+        Need Help? Call Our Team Of Certified Sewer &amp; Drain Experts 24/7
+    </div>
+
+    <div class="footerbackground" style="
+    background: linear-gradient(135deg, #48acd4 0%, #2382c4 100%);
+">
+    <div class="container">
+    
+    <div class="footer-main">
+
+        <!-- Company -->
+        
+        <div class="footer-col company">
+            <img src="assets/logo.png.png" alt="Logo" class="footer-logo">
+
+            <div class="company-info">
+                <p><strong>Address:</strong> 850 Collegeville Rd<br>Ste 1, Collegeville, PA 19426</p>
+
+                <p><strong>Phone:</strong> (484) 801-7142</p>
+              
+            </div>
+        </div>
+
+        <!-- Navigate -->
+        <div class="footer-col">
+            <h3>NAVIGATE</h3>
+
+            <ul>
+                <li><a href="tools/symptom-checker.html">Symptom Checker</a></li>
+                <li><a href="tools/sewer-camera-review.html">Camera Video Review Intake</a></li>
+                <li><a href="tools/estimate-review.html">Estimate Comparison</a></li>
+                <li><a href="tools/free-second-opinion.html">Free Second Opinion</a></li>
+                <li><a href="tools/cost-estimator.html">Cost Estimator</a></li>
+                <li><a href="tools/emergency-risk-check.html">Emergency Risk Check</a></li>
+            </ul>
+        </div>
+
+        <!-- Services -->
+        <div class="footer-col">
+            <h3>SERVICES</h3>
+
+            <ul>
+                <li><a href="#">Sewer Camera Inspection</a></li>
+                <li><a href="#">Hydro Jetting</a></li>
+                <li><a href="#">Camera Aided Drain Cleaning</a></li>
+                <li><a href="#">Conventional Excavation</a></li>
+                <li><a href="#">Pipe Bursting</a></li>
+            </ul>
+        </div>
+
+        <!-- Service Areas 
+           <div class="footer-col">
+            <h3>SERVICE AREAS</h3>
+
+            <h4>Southeastern PA</h4>
+
+            <div class="arrow">
+                <i class="fa-solid fa-arrow-down"></i>
+            </div>
+
+            <ul>
+                <li>Chester County, PA</li>
+                <li>Montgomery County, PA</li>
+                <li>Delaware County, PA</li>
+                <li>Bucks County, PA</li>
+            </ul>
+
+            <div class="social-icons">
+                <a href="#"><i class="fab fa-facebook-f"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fa-solid fa-a"></i></a>
+            </div>
+        </div>
+       -->
+        
+    </div>
+    </div></div>
+
+    <div class="footer-bottom">
+        © Copyright 2026 All Rights Reserved
+    </div>
+
+</footer>
+<script src="/js/app.js"></script>
+
+</body>
+</html>

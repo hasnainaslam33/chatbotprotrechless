@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm run build:ui)",
+      "PowerShell(node -e \"import\\('./server/routes/estimate-comparison.js'\\).then\\(m => { console.log\\('route ok:', typeof m.default\\); return import\\('./src/lib/comparisonScoring.js'\\); }\\).then\\(s => { const c = s.buildContractor\\({ id:'contractor-1', contractorName:'Test Co', fields:[{key:'contractor_labor_warranty',status:'clearly_included',value:'5 years',sourceText:'5 year labor warranty'},{key:'driveway_restoration',status:'clearly_excluded',sourceText:'driveway restoration by others'},{key:'exclusion_rock',status:'clearly_excluded',sourceText:'rock excavation billed at cost'}] }, 0\\); console.log\\('fields:', c.fields.length, 'score:', c.overallScore, 'missing:', c.missingCount, 'warnings:', c.warningCount\\); const weights = s.scoreGroups.reduce\\(\\(a,g\\)=>a+g.weight,0\\); console.log\\('weights total:', weights\\); const risks = s.topRisks\\([c], [], 5\\); console.log\\('risks:', risks.length, risks.map\\(r=>r.severity+':'+r.fieldKey\\).join\\(', '\\)\\); }\\).catch\\(e => { console.error\\('FAIL', e\\); process.exit\\(1\\); }\\)\")",
+      "PowerShell(Get-Content .env | ForEach-Object { if \\($_ -match '^\\(OPENAI_API_KEY|OPENAI_MODEL|PORT\\)='\\) { $parts = $_ -split '=',2; if \\($parts[0] -eq 'OPENAI_API_KEY'\\) { \"OPENAI_API_KEY=\" + $parts[1].Substring\\(0,[Math]::Min\\(8,$parts[1].Length\\)\\) + \"... \\(len \" + $parts[1].Length + \"\\)\" } else { $_ } } })",
+      "PowerShell(node server/tmp-comparison-test.js)"
+    ]
+  }
+}

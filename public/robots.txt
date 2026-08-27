@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /uploads/
+Disallow: /reports/
+Disallow: /private/
+Disallow: /chat-transcripts/
+
+Sitemap: https://answers.protrenchless.com/sitemap.xml

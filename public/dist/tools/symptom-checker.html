@@ -1,0 +1,84 @@
+<script>
+  fetch("../header.html")
+    .then(response => response.text())
+    .then(data => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data, 'text/html');
+      document.head.append(...Array.from(doc.head.childNodes));
+      document.getElementById("header").innerHTML = doc.body.innerHTML;
+    });
+</script>
+
+<div id="header"></div>
+
+
+<main>
+  <section class="tool-hero">
+    <div class="container">
+      <span class="kicker">Powered by Pro Trenchless Services</span>
+      <h1 class="h1-small">Sewer Symptom Checker</h1>
+      <p class="lead">Answer a few plain-English questions about the backup, odor, rain, trees, prior cleaning, and fixtures involved.</p>
+    </div>
+  </section>
+  <section>
+    <div class="container module-layout">
+      <div class="panel">
+        
+<h2>Tell us what is backing up</h2>
+<p class="mini">Select everything that applies. The tool will estimate risk and suggest the smartest next step.</p>
+<div class="form-section">
+  <div class="field"><label>What is backing up?</label><div class="check-grid">
+    <label class="check"><input name="fixture" type="checkbox" value="Basement drain"> Basement drain</label>
+    <label class="check"><input name="fixture" type="checkbox" value="Toilet"> Toilet</label>
+    <label class="check"><input name="fixture" type="checkbox" value="Shower"> Shower</label>
+    <label class="check"><input name="fixture" type="checkbox" value="Kitchen sink"> Kitchen sink</label>
+    <label class="check"><input name="fixture" type="checkbox" value="Laundry"> Laundry</label>
+    <label class="check"><input name="fixture" type="checkbox" value="Outside cleanout"> Outside cleanout</label>
+    <label class="check"><input name="fixture" type="checkbox" value="Multiple fixtures"> Multiple fixtures</label>
+  </div></div>
+  <div class="field"><label>How often does it happen?</label><select id="repeat"><option>One time</option><option>Comes and goes</option><option>Keeps coming back</option><option>Every time water is used</option></select></div>
+  <div class="field"><label>Warning signs</label><div class="check-grid">
+    <label class="check"><input name="signal" type="checkbox" value="Sewage smell"> Sewage smell</label>
+    <label class="check"><input name="signal" type="checkbox" value="Water comes up from another fixture"> Water comes up from another fixture</label>
+    <label class="check"><input name="signal" type="checkbox" value="Recent heavy rain"> Recent heavy rain</label>
+    <label class="check"><input name="signal" type="checkbox" value="Large trees nearby"> Large trees nearby</label>
+    <label class="check"><input name="signal" type="checkbox" value="Prior repeated cleanings"> Prior repeated cleanings</label>
+    <label class="check"><input name="signal" type="checkbox" value="Real estate transaction"> Real estate transaction</label>
+  </div></div>
+  <div class="field"><label>Known pipe material</label><select><option>Unknown</option><option>Clay</option><option>Cast iron</option><option>PVC</option><option>Terra cotta</option><option>Orangeburg</option></select></div>
+  <button class="btn" type="button" onclick="runSymptomChecker()">Get AI risk recommendation</button>
+</div>
+
+        <div id="result-box" class="result-box"></div>
+      </div>
+      
+<div class="panel lead-box" id="lead-form">
+  <h2>Send this to Pro Trenchless</h2>
+  <p class="mini">Ask for booking only after the tool gives value. This form is ready to connect to Gravity Forms, Tally, HubSpot, GoHighLevel, Zapier, ServiceTitan, or a custom webhook.</p>
+  <div class="form-section">
+    <div class="field"><label>Name</label><input placeholder="Full name"></div>
+    <div class="field"><label>Phone</label><input placeholder="Best phone number"></div>
+    <div class="field"><label>Email</label><input placeholder="Email address"></div>
+    <div class="field"><label>Property address or service area</label><input placeholder="Street, city, ZIP"></div>
+    <div class="field"><label>Preferred appointment time</label><input placeholder="Morning, afternoon, urgent, or specific time"></div>
+    <div class="field"><label>Upload video, estimate, report, or photos</label><input type="file" multiple></div>
+    <label class="check"><input type="checkbox"> I consent to be contacted by Pro Trenchless Services about this request.</label>
+    <button class="btn" type="button">Request Review</button>
+  </div>
+  <p class="disclaimer">This AI tool provides educational guidance only. Final diagnosis, repair method, pricing, code compliance, permits, and safety decisions require professional inspection and verification.</p>
+</div>
+
+    </div>
+  </section>
+</main>
+
+
+<footer class="footer">
+  <div class="container">
+    <strong>Instant Sewer & Drain Answers</strong> is an educational decision tool powered by Pro Trenchless Services. This AI tool provides educational guidance only. Final diagnosis, repair method, pricing, code compliance, permits, and safety decisions require professional inspection and verification.
+  </div>
+</footer>
+<script src="/js/app.js"></script>
+
+</body>
+</html>
