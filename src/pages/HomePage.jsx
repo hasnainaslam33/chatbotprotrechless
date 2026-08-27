@@ -58,14 +58,6 @@ export default function HomePage() {
               {
                 title: 'Give value first',
                 copy: 'Explain likely causes, risk level, and what information is missing before asking for a booking.'
-              },
-              {
-                title: 'Capture qualified leads',
-                copy: 'Name, phone, email, address, user type, urgency, files, appointment preference, and contact consent.'
-              },
-              {
-                title: 'Feed the main site',
-                copy: 'Link results to Pro Trenchless service pages and turn anonymized questions into reviewed SEO content.'
               }
             ].map((step, index) => (
               <div key={step.title} className="step">
