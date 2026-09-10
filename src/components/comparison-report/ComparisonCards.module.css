@@ -1,0 +1,18 @@
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }
+.card { position: relative; overflow: hidden; min-height: 390px; padding: 1.4rem 1.35rem 4.3rem; border: 1px solid var(--gray-border); border-top: 7px solid var(--green); background: var(--bg-green); box-shadow: var(--shadow-soft); }
+.card.purple { border-top-color: var(--purple); background: var(--bg-purple); } .card.blue { border-top-color: var(--blue); background: var(--bg-blue); }
+.card h2 { margin: 0 0 1.35rem; color: var(--navy); font-size: 1.35rem; }
+.scoreLabel, dt { color: var(--gray-text); font-size: .69rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.score { margin-top: .2rem; color: var(--navy); font-size: 3.35rem; font-weight: 900; letter-spacing: -.07em; line-height: 1; }
+.score small { color: var(--gray-text); font-size: .95rem; letter-spacing: 0; }
+dl { margin: 1.35rem 0 0; } dl div { display: grid; grid-template-columns: 1fr 1.2fr; gap: .75rem; padding: .65rem 0; border-top: 1px solid rgba(17,43,70,.12); } dt, dd { margin: 0; } dd { color: var(--navy); font-size: .91rem; font-weight: 700; } .low { color: var(--green); } .medium { color: var(--orange); } .high { color: #C13B45; }
+.ownership { align-items: flex-start; display: inline-flex; gap: .4rem; line-height: 1.25; }
+.ownershipIcon { align-items: center; display: inline-flex; flex: 0 0 auto; font-size: 1rem; font-weight: 900; height: 1.15rem; justify-content: center; width: 1.15rem; }
+.local { color: #16834d; }
+.local .ownershipIcon { background: #dff4e8; border-radius: 50%; }
+.corporate { color: #c13b45; }
+.corporate .ownershipIcon { font-size: 1.25rem; }
+.unknown { color: #657487; }
+.unknown .ownershipIcon { border: 1px solid currentColor; border-radius: 50%; }
+.ribbon { position: absolute; right: 0; bottom: 0; left: 0; padding: .8rem 1rem; background: var(--green); color: white; font-weight: 900; text-align: center; } .purple .ribbon { background: var(--purple); } .blue .ribbon { background: var(--blue); }
+@media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .card { min-height: 0; } }

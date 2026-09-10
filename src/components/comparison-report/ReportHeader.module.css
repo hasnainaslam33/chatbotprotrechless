@@ -1,0 +1,10 @@
+.header { background: var(--navy); color: var(--white); }
+.inner { width: min(var(--page-width), calc(100% - 2rem)); min-height: 164px; margin: 0 auto; display: flex; align-items: stretch; justify-content: space-between; gap: 2rem; }
+.company { padding-top: 2.3rem; font-size: clamp(1.8rem, 4vw, 3.25rem); font-weight: 900; letter-spacing: -0.06em; line-height: .95; }
+.company span { color: var(--pink); }
+.tagline { margin-top: .75rem; color: #D8E3EE; font-size: .76rem; letter-spacing: .2em; font-weight: 700; }
+.badge { min-width: 230px; padding: 1.65rem 1.5rem 1rem; background: var(--pink); display: flex; flex-direction: column; justify-content: center; }
+.badge strong { font-size: 2rem; line-height: 1; letter-spacing: -.04em; }
+.badge b { margin-top: .45rem; font-size: .95rem; }
+.badge span { margin-top: .8rem; color: #FFD6E5; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
+@media (max-width: 600px) { .inner { min-height: 142px; gap: 1rem; } .company { padding-top: 1.7rem; font-size: 1.8rem; } .tagline { font-size: .62rem; letter-spacing: .12em; } .badge { min-width: 130px; padding: 1rem; } .badge strong { font-size: 1.35rem; } .badge b { font-size: .75rem; } }

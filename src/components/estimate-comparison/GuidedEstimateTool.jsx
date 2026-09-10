@@ -111,6 +111,12 @@ export default function GuidedEstimateTool({ page }) {
   }
 
   async function handleAnalyze() {
+    const customerError = validateCustomerProfile(basics);
+    if (customerError) {
+      setFormError(customerError);
+      return;
+    }
+
     if (!readyEstimates.length) {
       setFormError('Please upload at least one contractor estimate to continue.');
       return;
@@ -130,6 +136,13 @@ export default function GuidedEstimateTool({ page }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userType: readUserType(),
+          customer: {
+            customerName: basics.customerName,
+            streetAddress: basics.streetAddress,
+            city: basics.city,
+            state: basics.state,
+            zipCode: basics.zipCode
+          },
           projectBasics: basics,
           estimates: readyEstimates.map((estimate, index) => ({
             contractorName: estimate.contractorName || `Contractor ${index + 1}`,
@@ -162,6 +175,9 @@ export default function GuidedEstimateTool({ page }) {
       );
       setStep(2);
       setPhase(PHASE.RESULTS);
+      if (data?.reportUrl) {
+        window.history.replaceState(null, '', data.reportUrl.replace(window.location.origin, ''));
+      }
       window.setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
     } catch (error) {
       setFormError(error.message || 'We could not analyze these estimates right now. Please try again in a moment.');
@@ -199,7 +215,7 @@ export default function GuidedEstimateTool({ page }) {
       <IntakeStepper steps={STEPS} currentStep={step} onStepSelect={(index) => (phase === PHASE.INTAKE ? setStep(index) : undefined)} />
 
       {phase === PHASE.INTAKE && step === 0 ? (
-        <ProjectBasicsStep values={basics} onChange={handleBasicsChange} onNext={() => setStep(1)} />
+        <ProjectBasicsStep values={basics} onChange={handleBasicsChange} onNext={() => setStep(1)} formError={formError} />
       ) : null}
 
       {phase === PHASE.INTAKE && step === 1 ? (
@@ -234,6 +250,22 @@ function readUserType() {
   return window.localStorage.getItem('pt_user_type') || 'Homeowner';
 }
 
+function validateCustomerProfile(values = {}) {
+  const customerName = String(values.customerName || '').trim();
+  const streetAddress = String(values.streetAddress || '').trim();
+  const city = String(values.city || '').trim();
+  const state = String(values.state || '').trim();
+  const zipCode = String(values.zipCode || '').trim();
+
+  if (!customerName) return 'Please enter the customer name before generating the comparison.';
+  if (!streetAddress) return 'Please enter a street address before generating the comparison.';
+  if (!city) return 'Please enter the city before generating the comparison.';
+  if (!state) return 'Please choose the state before generating the comparison.';
+  if (!zipCode) return 'Please enter the ZIP code before generating the comparison.';
+  if (!/^\d{5}(?:-\d{4})?$/.test(zipCode)) return 'Please enter a valid U.S. ZIP code before generating the comparison.';
+  return '';
+}
+
 function friendlyUploadError(serverError = '', status = 0) {
   const raw = String(serverError || '');
   if (/Unsupported file type/i.test(raw)) return 'That file type is not supported. Please upload a PDF, JPG, PNG, DOC, DOCX, or TXT file.';
@@ -256,6 +288,9 @@ function normalizeAnalysis(data = {}) {
 
   return {
     contractors,
+    customer: data.customer || {},
+    reportId: data.reportId || '',
+    reportDate: data.reportDate || data.analyzedAt || '',
     risks: Array.isArray(data.risks) && data.risks.length ? data.risks : topRisks(contractors, [], 5),
     keyQuestions: Array.isArray(data.keyQuestions) && data.keyQuestions.length ? data.keyQuestions : buildKeyQuestionMatrix(contractors),
     contractorQuestions:

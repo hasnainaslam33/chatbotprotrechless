@@ -2,8 +2,10 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
+import sgMail from '@sendgrid/mail';
+import { config } from '../config.js';
 import { extractEstimate, synthesizeComparison } from '../services/estimate-extractor.js';
-import { appendJsonl } from '../services/storage.js';
+import { appendJsonl, readJsonl } from '../services/storage.js';
 import { getSettings, isModuleEnabled } from '../services/settings.js';
 import { cleanText } from '../utils/safe.js';
 import { DISCLAIMER, MAX_ESTIMATES } from '../../src/lib/comparisonConfig.js';
@@ -34,6 +36,22 @@ const comparisonLimiter = rateLimit({
 const schema = z.object({
   userType: z.string().max(120).default('Homeowner'),
   sessionId: z.string().max(100).optional(),
+  customer: z
+    .object({
+      customerName: z.string().min(1).max(160),
+      streetAddress: z.string().min(1).max(220),
+      city: z.string().min(1).max(120),
+      state: z.string().min(1).max(80),
+      zipCode: z.string().min(3).max(12)
+    })
+    .optional()
+    .default({
+      customerName: '',
+      streetAddress: '',
+      city: '',
+      state: '',
+      zipCode: ''
+    }),
   projectBasics: z.record(z.any()).optional().default({}),
   estimates: z
     .array(
@@ -53,6 +71,53 @@ function parsePrice(value) {
   const numeric = Number(String(value).replace(/[^0-9.]/g, ''));
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 }
+
+router.get('/report/:reportId/:token', async (req, res) => {
+  try {
+    const { reportId, token } = req.params;
+    const rows = await readJsonl('estimate-comparisons.jsonl', 5000);
+    const match = rows.find((row) => row.reportId === reportId && row.reportToken === token);
+    if (!match) return res.status(404).json({ error: 'Comparison not found.' });
+    res.json(match.comparison || match);
+  } catch (error) {
+    res.status(500).json({ error: 'Unable to load this comparison.' });
+  }
+});
+
+router.post('/email/:reportId/:token', async (req, res) => {
+  try {
+    const { reportId, token } = req.params;
+    const { toEmail, fromEmail } = req.body || {};
+    const rows = await readJsonl('estimate-comparisons.jsonl', 5000);
+    const match = rows.find((row) => row.reportId === reportId && row.reportToken === token);
+    if (!match) return res.status(404).json({ error: 'Comparison not found.' });
+
+    const comparison = match.comparison || match;
+    const customer = comparison.customer || {};
+    const address = [customer.streetAddress, customer.city, customer.state, customer.zipCode].filter(Boolean).join(', ');
+    const recommended = comparison.contractors?.[0] || {};
+
+    const subject = 'Your Sewer Proposal Comparison';
+    const customerName = customer.customerName || 'Customer';
+    const body = `Hi ${customerName},\n\nWe reviewed the proposals for:\n${address}\n\nYour comparison is ready.\n\nOverall result:\n${recommended.contractorName || 'Recommended company'}\n${recommended.proposedMethod || 'Recommended option'}\n${recommended.overallScore ?? '0'}/100\n\nYou can review:\n- Company scores\n- Prices\n- Good / Better / Best options\n- Warranty\n- Satisfaction guarantees\n- Possible extra costs\n- Questions to ask before signing\n\nVIEW MY COMPARISON\n${comparison.reportUrl || 'https://answers.protrenchless.com'}\n\nWould you like a free trenchless camera inspection before you decide?\n\nREQUEST FREE CAMERA INSPECTION\nhttps://answers.protrenchless.com/#lead-form\n\nRegards,\n${config.businessName || 'Pro Trenchless Services'}`;
+
+    if (!config.sendgridApiKey || !config.notifyEmailFrom || !toEmail) {
+      return res.json({ ok: true, preview: { subject, body }, note: 'SendGrid is not configured. Email preview generated only.' });
+    }
+
+    sgMail.setApiKey(config.sendgridApiKey);
+    await sgMail.send({
+      to: toEmail,
+      from: fromEmail || config.notifyEmailFrom,
+      subject,
+      text: body
+    });
+
+    res.json({ ok: true, sent: true, subject, to: toEmail });
+  } catch (error) {
+    res.status(500).json({ error: 'Unable to send this email.' });
+  }
+});
 
 router.post('/', comparisonLimiter, async (req, res, next) => {
   try {
@@ -76,6 +141,17 @@ router.post('/', comparisonLimiter, async (req, res, next) => {
 
     const sessionId = cleanText(payload.sessionId, 100) || nanoid(12);
     const projectBasics = payload.projectBasics || {};
+    const customer = {
+      customerName: cleanText(payload.customer?.customerName, 160),
+      streetAddress: cleanText(payload.customer?.streetAddress, 220),
+      city: cleanText(payload.customer?.city, 120),
+      state: cleanText(payload.customer?.state, 80),
+      zipCode: cleanText(payload.customer?.zipCode, 12)
+    };
+
+    if (!customer.customerName || !customer.streetAddress || !customer.city || !customer.state || !customer.zipCode) {
+      return res.status(400).json({ error: 'Customer name, street address, city, state, and ZIP code are required before a comparison can be generated.' });
+    }
 
     // Extract every document in parallel — each call is self-contained and
     // never throws, so one unreadable PDF cannot fail the whole comparison.
@@ -123,9 +199,19 @@ router.post('/', comparisonLimiter, async (req, res, next) => {
     const risks = topRisks(contractors, synthesis.risks, 5);
     const summary = synthesis.summary || buildFallbackSummary(contractors);
 
+    const reportId = nanoid(10);
+    const reportToken = nanoid(32);
+    const analyzedAt = new Date().toISOString();
+
     const result = {
       sessionId,
-      analyzedAt: new Date().toISOString(),
+      reportId,
+      reportToken,
+      reportDate: analyzedAt,
+      customer,
+      customerAddress: `${customer.streetAddress}, ${customer.city}, ${customer.state} ${customer.zipCode}`,
+      reportUrl: `${config.publicBaseUrl}/comparison/${reportId}/${reportToken}`,
+      analyzedAt,
       mode: synthesis.mode,
       contractors,
       risks,
@@ -137,10 +223,14 @@ router.post('/', comparisonLimiter, async (req, res, next) => {
 
     await appendJsonl('estimate-comparisons.jsonl', {
       id: nanoid(),
+      reportId,
+      reportToken,
       sessionId,
-      createdAt: result.analyzedAt,
+      createdAt: analyzedAt,
+      updatedAt: analyzedAt,
       module: MODULE_KEY,
       userType: payload.userType,
+      customer,
       projectBasics,
       contractorCount: contractors.length,
       contractors: contractors.map((contractor) => ({
@@ -153,7 +243,8 @@ router.post('/', comparisonLimiter, async (req, res, next) => {
         missingCount: contractor.missingCount,
         warningCount: contractor.warningCount
       })),
-      synthesisMode: synthesis.mode
+      synthesisMode: synthesis.mode,
+      comparison: result
     });
 
     res.json(result);

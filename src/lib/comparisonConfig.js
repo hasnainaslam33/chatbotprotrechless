@@ -139,6 +139,11 @@ export const comparisonCategories = [
     group: 'qualifications',
     intro: 'Who is legally standing behind this work, and are they the company that will actually be in your yard?',
     fields: [
+      f('ownership_accountability', 'Ownership & Accountability', {
+        q: 'Can you verify whether this company is locally owned and operated or owned by a larger corporation?',
+        highlight: true,
+        hint: 'A license or registration number shown in the submitted document verifies this status. Without one, ownership is not verified.'
+      }),
       f('legal_business_name', 'Legal business name', { q: 'What is the exact legal business name that will appear on the contract?' }),
       f('business_address', 'Business address', { q: 'What is your physical business address?' }),
       f('license_number', 'Contractor / license / registration number', { q: 'What is your contractor license or registration number for this type of sewer work?' }),
@@ -667,6 +672,11 @@ export const projectBasicsFields = [
 ];
 
 export const projectBasicsDefaults = {
+  customerName: '',
+  streetAddress: '',
+  city: '',
+  state: '',
+  zipCode: '',
   pipeLengthFeet: '',
   pipeDepthFeet: '',
   surfaceType: 'Unknown',
@@ -675,6 +685,50 @@ export const projectBasicsDefaults = {
   pipeDiameter: 'Unknown',
   propertyType: 'Single-family home'
 };
+
+export const customerProfileFields = [
+  {
+    name: 'customerName',
+    label: 'Customer Name',
+    type: 'text',
+    placeholder: 'Full name',
+    required: true,
+    hint: 'Required before a comparison can be created.'
+  },
+  {
+    name: 'streetAddress',
+    label: 'Street Address',
+    type: 'text',
+    placeholder: '123 Main St',
+    required: true,
+    hint: 'Required before a comparison can be created.'
+  },
+  {
+    name: 'city',
+    label: 'City',
+    type: 'text',
+    placeholder: 'City',
+    required: true,
+    hint: 'Required before a comparison can be created.'
+  },
+  {
+    name: 'state',
+    label: 'State',
+    type: 'select',
+    options: ['','AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'],
+    required: true,
+    hint: 'Required before a comparison can be created.'
+  },
+  {
+    name: 'zipCode',
+    label: 'ZIP Code',
+    type: 'text',
+    inputMode: 'numeric',
+    placeholder: '12345',
+    required: true,
+    hint: 'Use a valid U.S. ZIP code.'
+  }
+];
 
 /* ------------------------------------------------------------------ */
 /* Repair methods + upload states                                      */

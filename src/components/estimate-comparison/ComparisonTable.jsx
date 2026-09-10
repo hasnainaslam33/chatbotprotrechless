@@ -49,6 +49,20 @@ function FieldEvidence({ contractors, fieldKey }) {
   );
 }
 
+function OwnershipStatus({ contractor }) {
+  const license = contractor.fields.find((field) => field.key === 'license_number');
+  const meta = license?.value
+    ? { className: 'is-local', icon: '✓', label: 'Ownership verified' }
+    : { className: 'is-unknown', icon: '?', label: 'Ownership not verified' };
+
+  return (
+    <span className={`ec-ownership-status ${meta.className}`} title={meta.label}>
+      <span className="ec-ownership-icon" aria-hidden="true">{meta.icon}</span>
+      <span>{meta.label}</span>
+    </span>
+  );
+}
+
 function CategoryBlock({ category, contractors, activeColumn, defaultOpen }) {
   const [open, setOpen] = useState(defaultOpen);
   const [expandedField, setExpandedField] = useState(null);
@@ -121,8 +135,14 @@ function CategoryBlock({ category, contractors, activeColumn, defaultOpen }) {
                           const value = contractor.fields.find((item) => item.key === field.key);
                           return (
                             <td className={`ec-col-${contractor.slot}`} key={contractor.id}>
-                              <StatusBadge status={value?.status} compact />
-                              {value?.value ? <span className="ec-cell-value">{value.value}</span> : null}
+                              {field.key === 'ownership_accountability' ? (
+                                <OwnershipStatus contractor={contractor} />
+                              ) : (
+                                <>
+                                  <StatusBadge status={value?.status} compact />
+                                  {value?.value ? <span className="ec-cell-value">{value.value}</span> : null}
+                                </>
+                              )}
                             </td>
                           );
                         })}

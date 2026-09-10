@@ -1,0 +1,7 @@
+.strip { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--gray-border); background: var(--white); }
+.item { min-height: 86px; padding: 1rem 1.15rem; display: flex; flex-direction: column; justify-content: center; gap: .35rem; border-right: 1px solid var(--gray-border); }
+.item:last-child { border-right: 0; }
+.item span { color: var(--gray-text); font-size: .7rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.item strong { color: var(--ink); font-size: .95rem; }
+@media (max-width: 760px) { .strip { grid-template-columns: repeat(2, 1fr); } .item:nth-child(2) { border-right: 0; } .item:nth-child(-n+2) { border-bottom: 1px solid var(--gray-border); } }
+@media (max-width: 460px) { .strip { grid-template-columns: 1fr; } .item, .item:nth-child(2) { border-right: 0; border-bottom: 1px solid var(--gray-border); } .item:last-child { border-bottom: 0; } }

@@ -1,0 +1,3 @@
+import styles from './TierCards.module.css';
+
+export default function TierCards({ items }) { return <section className={styles.grid}>{items.map((item) => <article className={`${styles.card} ${styles[item.accent]}`} key={item.tier}><div className={styles.tier}>{item.tier}</div><h2>{item.packageName}</h2><div className={styles.price}>{item.price}</div><div className={styles.ribbon}>{item.ribbon}</div><h3>What you get</h3><ul>{item.includes.map((entry) => <li key={entry}>{entry}</li>)}</ul><h3 className={styles.watch}>Watch for</h3><ul>{item.watchFor.map((entry) => <li key={entry}>{entry}</li>)}</ul></article>)}</section>; }

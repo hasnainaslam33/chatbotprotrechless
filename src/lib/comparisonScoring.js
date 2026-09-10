@@ -80,7 +80,7 @@ export function normalizeFields(rawFields = []) {
       hint: field.hint || '',
       clarificationQuestion: field.q || '',
       status: found?.status || STATUS.NOT_STATED,
-      value: found?.value || '',
+      value: field.key === 'ownership_accountability' ? normalizeOwnershipValue(found?.value, found?.sourceText) : found?.value || '',
       sourceText: found?.sourceText || '',
       sourcePage: found?.sourcePage ?? null,
       confidence: found?.confidence ?? null
@@ -101,6 +101,16 @@ function normalizeShortStatus(value) {
     ambiguous: STATUS.NEEDS_CLARIFICATION
   };
   return map[value] || null;
+}
+
+function normalizeOwnershipValue(value, sourceText) {
+  const text = clampString(value, 120).toLowerCase();
+  if (/\bownership verified\b/.test(text)) return 'Ownership verified';
+  if (/\blocally owned and operated\b/.test(text)) return 'Locally owned and operated';
+  if (/\blarge corporation owned\b/.test(text)) return 'Large corporation owned';
+  if (/\bownership not verified\b/.test(text)) return 'Ownership not verified';
+  if (/\b(?:license|licence|registration)\b/.test(`${text} ${clampString(sourceText, 700).toLowerCase()}`)) return 'Ownership verified';
+  return '';
 }
 
 /**

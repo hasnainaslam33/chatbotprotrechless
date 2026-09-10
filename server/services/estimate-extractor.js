@@ -42,6 +42,7 @@ ABSOLUTE RULES — violating any of these makes the output worthless:
 4. Never infer warranty coverage from generic phrases such as "lifetime warranty", "manufacturer warranty", "industry-leading warranty", "fully guaranteed", or "guaranteed work". Those phrases alone tell you NOTHING about labor coverage, materials, transferability, excavation, removal, reinstallation, diagnostics, restoration, exclusions, or duration. Each of those must be separately written to be reported.
 5. "Backfill included" NEVER means finished surface restoration is included. Never map one to the other.
 6. Contractor identity, brand, reputation, and company name must not influence any status. Apply identical strictness to every document.
+7. For ownership_accountability, if the document contains an explicit contractor license or registration number, report the value exactly as "Ownership verified" and use the license wording as the source text. If no license number is present, omit this field. Do not infer verification from a local address, phone number, company name, insurance statement, branding, or service area.
 
 STATUS CODES — assign exactly one per field you report:
   "I" = ${statusMeta[STATUS.INCLUDED].label}   — the document explicitly confirms this is part of the quoted scope/price.

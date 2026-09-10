@@ -1,0 +1,4 @@
+.title { padding: 2.9rem 0 1.7rem; text-align: center; }
+.title h1 { margin: 0; color: var(--navy); font-size: clamp(1.8rem, 4vw, 3rem); letter-spacing: -.05em; line-height: 1; }
+.rule { width: 82px; height: 4px; margin: 1rem auto .8rem; background: var(--pink); }
+.title p { max-width: 660px; margin: 0 auto; color: var(--gray-text); font-size: .98rem; }

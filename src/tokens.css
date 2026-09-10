@@ -1,0 +1,17 @@
+:root {
+  --navy: #112B46;
+  --pink: #EA1E63;
+  --green: #2E9B5C;
+  --purple: #7B5CA9;
+  --blue: #2E7FB8;
+  --orange: #E0932E;
+  --bg-green: #E7F5EF;
+  --bg-purple: #F3EBFF;
+  --bg-blue: #EAFBFF;
+  --gray-text: #6B7280;
+  --gray-border: #E5E7EB;
+  --white: #FFFFFF;
+  --ink: #172033;
+  --page-width: 1180px;
+  --shadow-soft: 0 10px 28px rgba(17, 43, 70, 0.08);
+}
