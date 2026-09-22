@@ -355,7 +355,7 @@ h1 { font-size: clamp(42px, 6vw, 74px);
 .chat-widget.inline { position: static; right: auto; bottom: auto; }
 .chat-panel.chat-embedded { width: 100%; max-width: 100%; padding: 1rem; border-radius: 12px; }
 .chat-panel.chat-embedded .chat-messages { max-height: 50vh; }
-.chat-panel.chat-embedded .bubble { max-width: 70%; }
+.chat-panel.chat-embedded .bubble { max-width: 100%; }
 
 @media (max-width: 900px) {
   .chat-panel.chat-embedded { padding: 0.75rem; }
