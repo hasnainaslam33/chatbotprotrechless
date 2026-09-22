@@ -203,7 +203,7 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
           )}
 
           <div className="chat-conversation panel" style={{ marginTop: '1rem' }}>
-            <div ref={listRef} className="chat-messages" style={{ maxHeight: inline ? '40vh' : '320px', overflow: 'auto', padding: '1rem' }}>
+            <div ref={listRef} className="chat-messages" style={{ maxHeight: inline ? '60vh' : '320px', overflow: 'auto', padding: '1rem' }}>
               {messages.length === 0 && (
                 <div className="bubble">{inline ? 'Ask Flo a question and get a quick answer.' : 'Hi — ask any question about drains, sewer problems, or repairs.'}</div>
               )}
