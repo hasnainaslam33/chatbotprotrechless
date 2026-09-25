@@ -25,59 +25,8 @@ export default function HeroSection({ selectedType, onSelect }) {
           <p className="lead">
             Describe your sewer or drain problem, upload a camera video or estimate, and get guided next steps before approving repair work.
           </p>
-          <div className="hero-actions">
-            <Link className="btn" to="/tools/symptom-checker">
-              Check My Sewer Problem
-            </Link>
-            <Link className="btn secondary" to="/tools/sewer-camera-review">
-              Upload My Camera Video
-            </Link>
-            <Link className="btn secondary" to="/tools/estimate-review">
-              Compare My Estimate
-            </Link>
-            <Link className="btn warn" to="/tools/emergency-risk-check">
-              Emergency Backup Risk Check
-            </Link>
-          </div>
-          <div className="trust-row" >
-            <span>For homeowners</span>
-            <span>Realtors</span>
-            <span>Property managers</span>
-            <span>Restaurants</span>
-            <span>Plumbers</span>
-            <span>Inspectors</span>
-          </div>
         </div>
 
-        <div className="panel chat-card" >
-          <div className="chat-top">
-            <strong>Start here</strong>
-            <span className="status">
-              <span className="dot" /> Guidance available
-            </span>
-          </div>
-          <div className="bubble ai">First, tell us who you are so the guidance fits your situation.</div>
-          <div className="select-grid">
-            {userOptions.map((option) => (
-              <button
-                key={option}
-                className={`choice${selectedType === option ? ' active' : ''}`}
-                type="button"
-                onClick={() => onSelect(option)}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-          <div className="bubble user">{selectedType}</div>
-          <div className="bubble ai">{benefitText}</div>
-          <Link className="btn" to="/tools/symptom-checker">
-            Continue to guided checker
-          </Link>
-          <p className="disclaimer">
-            AI guidance is educational only. Final diagnosis and pricing require professional inspection and verification.
-          </p>
-        </div>
       </div>
     </section>
   );
