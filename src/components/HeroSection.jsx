@@ -25,7 +25,7 @@ export default function HeroSection({ selectedType, onSelect }) {
           <p className="lead">
             Describe your sewer or drain problem, upload a camera video or estimate, and get guided next steps before approving repair work.
           </p>
-          <div className="hero-actions" style="display:none;">
+          <div className="hero-actions">
             <Link className="btn" to="/tools/symptom-checker">
               Check My Sewer Problem
             </Link>
@@ -39,7 +39,7 @@ export default function HeroSection({ selectedType, onSelect }) {
               Emergency Backup Risk Check
             </Link>
           </div>
-          <div className="trust-row" style="display:none;">
+          <div className="trust-row" >
             <span>For homeowners</span>
             <span>Realtors</span>
             <span>Property managers</span>
@@ -49,7 +49,7 @@ export default function HeroSection({ selectedType, onSelect }) {
           </div>
         </div>
 
-        <div className="panel chat-card" style="display:none;">
+        <div className="panel chat-card" >
           <div className="chat-top">
             <strong>Start here</strong>
             <span className="status">
