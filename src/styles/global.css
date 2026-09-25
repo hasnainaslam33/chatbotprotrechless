@@ -27,14 +27,14 @@ img { max-width: 100%; display: block; }
 .nav-link { color: #35506f; font-weight: 600; }
 .nav-link.active { color: #6EC1E4; }
 .hero { padding: 4rem 0 3rem; background: linear-gradient(135deg, #eef7ff 0%, #f7fbff 100%); }
-.hero-grid { display: grid; grid-template-columns:  1.05fr .95fr; gap: 2rem; align-items: center; }
+.hero-grid { display: flex; grid-template-columns:  1.05fr .95fr; gap: 2rem; align-items: center; }
 .kicker { display: inline-block; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.16em; font-weight: 700; color: #6EC1E4; font-size: 0.8rem; }
 h1, h2, h3 { line-height: 1.15; }
 h1 { font-size: clamp(42px, 6vw, 74px);
     line-height: .96;
     margin: 0 0 18px;
     letter-spacing: -.065em; }
-.lead { font-size: 23px; color: #35506f; max-width: 60ch; }
+.lead { font-size: 23px; color: #35506f; max-width: 80%; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 40px 0; }
 .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 1.1rem; border-radius: 999px; background: #6EC1E4; color: white; font-weight: 700; border: none; cursor: pointer; }
 .btn.secondary { background: #fff; color: #6EC1E4; border: 1px solid #c7dff2; }
