@@ -54,7 +54,7 @@ export function AIResponse({ result }) {
       {/* Soft CTA Section */}
       {result.softCTA ? (
         <div className="result-section">
-          <div className="result-section-title">Suggested next step</div>
+          <div className="result-section-title">Get in Touch With Our Team</div>
           <p>{result.softCTA}</p>
         </div>
       ) : null}

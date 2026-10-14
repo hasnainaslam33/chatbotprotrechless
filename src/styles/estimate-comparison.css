@@ -673,7 +673,8 @@
   margin-top: auto;
   padding-top: 0.75rem;
 }
-.ec-paste summary {
+.ec-paste-label {
+  display: block;
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 600;
@@ -879,6 +880,16 @@
 .ec-ownership-status.is-corporate .ec-ownership-icon { font-size: 1.1rem; }
 .ec-ownership-status.is-unknown { color: #4b5c70; }
 .ec-ownership-status.is-unknown .ec-ownership-icon { border: 1px solid currentColor; }
+
+.ec-research-sources {
+  display: grid;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  font-size: 0.8rem;
+}
+.ec-research-sources a { overflow-wrap: anywhere; }
 
 .ec-contractor-facts .ec-ownership-status {
   align-items: flex-start;

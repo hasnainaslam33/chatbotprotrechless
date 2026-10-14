@@ -142,7 +142,8 @@ export const comparisonCategories = [
       f('ownership_accountability', 'Ownership & Accountability', {
         q: 'Can you verify whether this company is locally owned and operated or owned by a larger corporation?',
         highlight: true,
-        hint: 'A license or registration number shown in the submitted document verifies this status. Without one, ownership is not verified.'
+        scoring: false,
+        hint: 'Ownership and accountability are checked against independent public sources; a license verifies licensing, not ownership.'
       }),
       f('legal_business_name', 'Legal business name', { q: 'What is the exact legal business name that will appear on the contract?' }),
       f('business_address', 'Business address', { q: 'What is your physical business address?' }),
@@ -576,7 +577,8 @@ export const allFields = comparisonCategories.flatMap((category) =>
     category: category.id,
     categoryLabel: category.label,
     group: field.group || category.group,
-    transparency: typeof field.transparency === 'boolean' ? field.transparency : Boolean(category.transparency)
+    transparency: typeof field.transparency === 'boolean' ? field.transparency : Boolean(category.transparency),
+    scoring: field.scoring !== false
   }))
 );
 

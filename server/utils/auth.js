@@ -9,6 +9,12 @@ function sign(value) {
   return crypto.createHmac('sha256', config.adminSessionSecret).update(value).digest('base64url');
 }
 
+function safeEqual(a, b) {
+  const left = Buffer.from(String(a));
+  const right = Buffer.from(String(b));
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
 export function createAdminToken() {
   const payload = {
     role: 'admin',
@@ -22,7 +28,7 @@ export function createAdminToken() {
 export function verifyAdminToken(token = '') {
   const [body, signature] = String(token).split('.');
   if (!body || !signature) return false;
-  if (sign(body) !== signature) return false;
+  if (!safeEqual(sign(body), signature)) return false;
   try {
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
     return payload.role === 'admin' && Number(payload.exp) > Date.now();
@@ -35,10 +41,12 @@ export function requireAdmin(req, res, next) {
   const auth = req.headers.authorization || '';
   const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : '';
   const headerKey = req.headers['x-admin-key'] || '';
-  const queryToken = req.query?.admin_token || '';
+  // Plain download links can't send headers, so the query token is accepted only for file downloads.
+  const isDownload = req.method === 'GET' && /\/download$/.test(req.path);
+  const queryToken = isDownload ? req.query?.admin_token || '' : '';
   const provided = bearer || headerKey || queryToken;
 
-  const validApiKey = provided && provided === config.adminApiKey;
+  const validApiKey = provided && config.adminApiKey && safeEqual(provided, config.adminApiKey);
   const validToken = provided && verifyAdminToken(provided);
 
   if (!validApiKey && !validToken) {

@@ -34,7 +34,7 @@ function formatFallback({ urgency = 'Medium', summary = '', causes = '', steps =
   const causeBlock = cleanCauses ? `\n\nLikely cause categories:\n${cleanCauses}` : '';
   const stepBlock = cleanSteps.length ? `\n\nRecommended next steps:\n${cleanSteps.map(step => `- ${step}`).join('\n')}` : '';
   const questionBlock = cleanQuestions.length ? `\n\nQuestions to ask or information to gather:\n${cleanQuestions.map(question => `- ${question}`).join('\n')}` : '';
-  const ctaBlock = cleanCta ? `\n\nSoft CTA:\n${cleanCta}` : '';
+  const ctaBlock = cleanCta ? `\n\nGet in Touch With Our Team:\n${cleanCta}` : '';
   const disclaimerBlock = disclaimer ? `\n\nDisclaimer:\nThis AI tool provides educational guidance only. Final diagnosis, repair method, pricing, code compliance, permits, and safety decisions require professional inspection and verification.` : '';
 
   return `Urgency level: ${urgency}\n\nProblem: ${problemHeading}${problemDescription ? `\n\nDescription: ${problemDescription}` : ''}${causeBlock}${stepBlock}${questionBlock}${ctaBlock}${disclaimerBlock}`;

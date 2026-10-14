@@ -10,6 +10,7 @@ import StatusKey from './StatusKey.jsx';
 import TierCards from './TierCards.jsx';
 import WinnersRow from './WinnersRow.jsx';
 import '../../tokens.css';
+import { scoreGroups } from '../../lib/comparisonConfig.js';
 
 function fieldValue(contractor, key, fallback = 'Not stated') {
   const field = contractor.fields?.find((item) => item.key === key);
@@ -23,11 +24,6 @@ function fieldValue(contractor, key, fallback = 'Not stated') {
 
 function fieldStatus(contractor, key) {
   return contractor.fields?.find((item) => item.key === key)?.status || 'not_stated';
-}
-
-function ownershipValue(contractor) {
-  const license = contractor.fields?.find((item) => item.key === 'license_number');
-  return license?.value ? 'Ownership verified' : 'Ownership not verified';
 }
 
 function statusTone(status) {
@@ -80,7 +76,8 @@ function createReport(analysis) {
     name: contractor.contractorName,
     score: contractor.overallScore,
     price: priceLabel(contractor),
-    ownership: ownershipValue(contractor),
+    ownership: contractor.companyResearch?.ownershipAccountability || 'Ownership not verified',
+    status: contractor.companyResearch?.organizationStatus || 'Unable to verify',
     bestOption: contractor.proposedMethod,
     warranty: contractor.warranties?.[0]?.length || fieldValue(contractor, 'warranty_length'),
     questionsLeft: contractor.missingCount,
@@ -89,12 +86,25 @@ function createReport(analysis) {
     accent: ['green', 'purple', 'blue'][index] || 'blue'
   }));
   const companyColumns = contractors.map((contractor, index) => ({ key: `company${index}`, label: contractor.contractorName }));
-  const scoreRows = ['scope', 'price', 'warranty', 'verification', 'customer'].map((groupId) => {
-    const labels = { scope: 'Work details', price: 'Price clarity', warranty: 'Warranty', verification: 'Proof after work', customer: 'Customer protection' };
-    const row = { part: labels[groupId] };
+  const scoreParts = [
+    { label: 'Work details', groups: ['scope', 'method'] },
+    { label: 'Price clarity', groups: ['price'] },
+    { label: 'Warranty', groups: ['warranty'] },
+    { label: 'Proof after work', groups: ['verification'] },
+    { label: 'Customer protection', groups: ['qualifications', 'permits', 'restoration', 'customer'] }
+  ];
+  const scoreGroupWeights = new Map(scoreGroups.map((group) => [group.id, group.weight]));
+  const scoreRows = scoreParts.map(({ label, groups }) => {
+    const row = { part: label };
     contractors.forEach((contractor, index) => {
-      const group = contractor.groupScores?.find((item) => item.id === groupId);
-      row[`company${index}`] = group ? `${group.earned} / ${group.possible}` : 'Not stated';
+      const weightedPoints = groups.reduce((total, groupId) => {
+        const group = contractor.groupScores?.find((item) => item.id === groupId);
+        const weight = scoreGroupWeights.get(groupId) || 0;
+        const ratio = group?.possible ? group.earned / group.possible : 0;
+        return total + ratio * weight;
+      }, 0);
+      const possiblePoints = groups.reduce((total, groupId) => total + (scoreGroupWeights.get(groupId) || 0), 0);
+      row[`company${index}`] = `${weightedPoints.toFixed(1)} / ${possiblePoints}`;
     });
     return row;
   });
@@ -159,7 +169,7 @@ function createReport(analysis) {
 export default function ComparisonReportResult({ analysis, onStartOver }) {
   const report = createReport(analysis);
   const columns = [{ key: 'part', label: 'Score part' }, ...report.companyColumns];
-  const featureColumns = [{ key: 'matter', label: 'What matters' }, ...report.companyColumns];
+  const featureColumns = [{ key: 'matter', label: 'What Matters for Clarity' }, ...report.companyColumns];
   const totals = { part: 'TOTAL' };
   report.contractors.forEach((contractor, index) => { totals[`company${index}`] = `${contractor.overallScore} / 100`; });
   const address = [report.customer.streetAddress, report.customer.city, report.customer.state, report.customer.zipCode].filter(Boolean).join(', ');
@@ -182,6 +192,15 @@ export default function ComparisonReportResult({ analysis, onStartOver }) {
     company: `${pack.contractorName} - ${pack.total} question${pack.total === 1 ? '' : 's'}`,
     questions: pack.groups?.flatMap((group) => group.questions || []).slice(0, 6).map((item) => item.question).join(' | ') || 'No additional questions.'
   }));
+  const repairOptionRows = report.contractors.flatMap((contractor) => (contractor.repairOptions || []).map((option) => ({
+    upgrade: `${contractor.contractorName}: ${option.name}`,
+    cost: option.price || 'Not stated',
+    buys: [option.method, option.advantages, option.expectedServiceLife && `Expected service life: ${option.expectedServiceLife}`, option.warranty && `Warranty: ${option.warranty}`].filter(Boolean).join(' ')
+      || option.whyRecommended
+      || option.limitations
+      || option.fitForDocumentedCondition
+      || 'No further option details stated.'
+  })));
 
   return <div className={styles.page}>
     <ReportHeader company={{ name: 'PRO TRENCHLESS', tagline: 'SEWER & DRAIN EXPERTS · EVIDENCE BEFORE EXPENSE' }} badge={{ stat: '86+ YEARS', caption: 'MASTER PLUMBER', label: 'EXPERIENCE' }} />
@@ -195,10 +214,10 @@ export default function ComparisonReportResult({ analysis, onStartOver }) {
       <section className={styles.section}><DataTable columns={columns} rows={report.scoreRows} totals={totals} /></section>
       <section className={styles.section}><DataTable columns={featureColumns} rows={report.featureRows} statusColorFn={(value, row, key) => key.startsWith('company') ? statusTone(fieldStatus(report.contractors[Number(key.replace('company', ''))] || {}, featureDefinitionsFor(row.matter))) : ''} /></section>
       <section className={styles.section}><StatusKey items={[{ label: 'Clearly included', color: '#2E9B5C', description: 'Written as included.' }, { label: 'Clearly excluded', color: '#C13B45', description: 'Written as not included.' }, { label: 'Not stated', color: '#9CA3AF', description: 'Not found in the proposal.' }, { label: 'Needs clarification', color: '#E0932E', description: 'The words are not clear.' }]} /></section>
-      <section className={styles.section}><DataTable columns={[{ key: 'company', label: 'Company' }, { key: 'strength', label: 'Biggest strength' }, { key: 'concern', label: 'Biggest concern' }]} rows={report.contractors.map((contractor) => ({ company: contractor.contractorName, strength: contractor.documentNotes || contractor.labels?.[0] || 'Proposal details reviewed.', concern: `${contractor.missingCount || 0} items need clarification.` }))} /></section>
+      <section className={styles.section}><DataTable columns={[{ key: 'company', label: 'Company' }, { key: 'strength', label: 'Biggest strength' }]} rows={report.contractors.map((contractor) => ({ company: contractor.contractorName, strength: contractor.documentNotes || contractor.labels?.[0] || 'Proposal details reviewed.' }))} /></section>
       <PageTitle title="Good, Better, and Best" subtitle="One company can offer several choices. This view shows what each upgrade buys and what still needs an answer." />
       <section className={styles.section}><TierCards items={report.contractors.map((contractor, index) => ({ tier: ['Good', 'Better', 'Best'][index] || `Option ${index + 1}`, packageName: contractor.proposedMethod || 'Documented option', price: priceLabel(contractor), ribbon: contractor.labels?.[0] || 'Proposal option', accent: ['blue', 'green', 'purple'][index] || 'blue', includes: contractor.repairOptions?.[0]?.advantages ? [contractor.repairOptions[0].advantages] : ['See written proposal details'], watchFor: contractor.repairOptions?.[0]?.limitations ? [contractor.repairOptions[0].limitations] : ['Confirm missing terms in writing'] }))} /></section>
-      <section className={styles.section}><DataTable columns={[{ key: 'upgrade', label: 'Upgrade' }, { key: 'cost', label: 'Extra cost' }, { key: 'buys', label: 'What the extra money buys' }]} rows={[]} /></section>
+      <section className={styles.section}>{repairOptionRows.length ? <DataTable columns={[{ key: 'upgrade', label: 'Company and option' }, { key: 'cost', label: 'Stated price' }, { key: 'buys', label: 'Documented details' }]} rows={repairOptionRows} /> : <p className={styles.note}>No repair options or upgrades were described in the submitted proposals.</p>}</section>
       <PageTitle title="Warranty Comparison" subtitle="A warranty tells you what may be fixed after the job is done. The words matter more than the headline." />
       <section className={styles.section}><DataTable columns={warrantyTableColumns} rows={report.warrantyEvidence} statusColorFn={(value) => statusToneFromText(value)} /></section>
       <section className={styles.section}><h2 className={styles.subheading}>What the Warranty Really Means</h2><DataTable columns={[{ key: 'company', label: 'Company' }, { key: 'strength', label: 'Coverage summary' }, { key: 'concern', label: 'What still needs an answer' }]} rows={warrantySummaryRows} /></section>

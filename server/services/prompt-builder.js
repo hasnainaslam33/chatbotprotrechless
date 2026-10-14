@@ -79,7 +79,7 @@ Recommended next steps:
 - Step 2
 Questions to ask or information to gather:
 - Question/detail 1
-Soft CTA:
+Get in Touch With Our Team:
 Disclaimer:
 `;
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { acceptedUploadTypes, uploadStateMeta, UPLOAD_STATE } from '../../lib/comparisonConfig.js';
 
 function UploadStatePill({ state }) {
@@ -13,7 +13,6 @@ function UploadStatePill({ state }) {
 
 function EstimateCard({ estimate, index, onFieldChange, onFileSelect, onClearFile }) {
   const inputRef = useRef(null);
-  const [showPaste, setShowPaste] = useState(Boolean(estimate.pastedText));
   const busy = estimate.state === UPLOAD_STATE.UPLOADING;
 
   return (
@@ -83,16 +82,17 @@ function EstimateCard({ estimate, index, onFieldChange, onFileSelect, onClearFil
         <span className="ec-hint">Leave blank and we will read it from the document if it is printed there.</span>
       </div>
 
-      <details className="ec-paste" open={showPaste} onToggle={(event) => setShowPaste(event.currentTarget.open)}>
-        <summary>No file handy? Paste the estimate text instead</summary>
+      <div className="ec-paste">
+        <label className="ec-paste-label" htmlFor={`ec-paste-${index}`}>No file handy? Paste the estimate text instead</label>
         <textarea
+          id={`ec-paste-${index}`}
           className="ec-paste-input"
           rows={5}
           value={estimate.pastedText}
           placeholder="Paste the estimate wording here, exactly as written."
           onChange={(event) => onFieldChange(index, 'pastedText', event.target.value)}
         />
-      </details>
+      </div>
     </div>
   );
 }

@@ -76,6 +76,7 @@ export function normalizeFields(rawFields = []) {
       categoryLabel: field.categoryLabel,
       group: field.group,
       transparency: field.transparency,
+      scoring: field.scoring,
       highlight: Boolean(field.highlight),
       hint: field.hint || '',
       clarificationQuestion: field.q || '',
@@ -103,13 +104,12 @@ function normalizeShortStatus(value) {
   return map[value] || null;
 }
 
-function normalizeOwnershipValue(value, sourceText) {
+function normalizeOwnershipValue(value) {
   const text = clampString(value, 120).toLowerCase();
-  if (/\bownership verified\b/.test(text)) return 'Ownership verified';
+  // Check "not verified" first so negated phrasing is never read as a positive finding.
+  if (/\bownership not verified\b/.test(text)) return 'Ownership not verified';
   if (/\blocally owned and operated\b/.test(text)) return 'Locally owned and operated';
   if (/\blarge corporation owned\b/.test(text)) return 'Large corporation owned';
-  if (/\bownership not verified\b/.test(text)) return 'Ownership not verified';
-  if (/\b(?:license|licence|registration)\b/.test(`${text} ${clampString(sourceText, 700).toLowerCase()}`)) return 'Ownership verified';
   return '';
 }
 
@@ -177,7 +177,7 @@ export function scoreContractor(fields = []) {
 
   for (const field of fields) {
     const bucket = buckets.get(field.group);
-    if (!bucket) continue;
+    if (!bucket || field.scoring === false) continue;
     bucket.earned += scoreForStatus(field.status, { transparency: field.transparency });
     bucket.possible += 1;
   }
@@ -206,7 +206,7 @@ export function scoreCategories(fields = []) {
 
   for (const field of fields) {
     const bucket = byCategory.get(field.category);
-    if (!bucket) continue;
+    if (!bucket || field.scoring === false) continue;
     bucket.earned += scoreForStatus(field.status, { transparency: field.transparency });
     bucket.possible += 1;
   }
@@ -228,6 +228,7 @@ export function countStatuses(fields = []) {
     [STATUS.NEEDS_CLARIFICATION]: 0
   };
   for (const field of fields) {
+    if (field.scoring === false) continue;
     if (counts[field.status] !== undefined) counts[field.status] += 1;
   }
   return counts;
@@ -256,6 +257,7 @@ export function buildContractor(raw = {}, index = 0) {
     id: raw.id || `contractor-${index + 1}`,
     slot: index + 1,
     contractorName: clampString(raw.contractorName, 160) || `Contractor ${index + 1}`,
+    companyResearch: raw.companyResearch || null,
     fileName: clampString(raw.fileName, 200),
     analyzed: raw.analyzed !== false,
     extractionMode: clampString(raw.extractionMode, 60),

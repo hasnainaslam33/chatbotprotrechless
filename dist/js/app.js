@@ -581,7 +581,7 @@ function renderAiResult(answer, links=[], meta={}, structuredAnswer=null){
 
   const softCtaSection = structured?.softCTA ? `
     <div class="result-card">
-      <div class="result-card-title">Soft CTA</div>
+      <div class="result-card-title">Get in Touch With Our Team</div>
       <div class="result-card-copy">${escapeHtml(structured.softCTA)}</div>
     </div>
   ` : '';

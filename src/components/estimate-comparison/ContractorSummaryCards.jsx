@@ -46,6 +46,13 @@ function deriveMainResult(contractor = {}) {
   return contractor.proposedMethod ? `Method: ${contractor.proposedMethod}` : 'Documentation review completed';
 }
 
+function ownershipStatus(contractor = {}) {
+  const value = contractor.companyResearch?.ownershipAccountability || 'Ownership not verified';
+  if (value === 'Large corporation owned') return { className: 'is-corporate', icon: '⚠', label: value };
+  if (value === 'Locally owned and operated') return { className: 'is-local', icon: '✓', label: value };
+  return { className: 'is-unknown', icon: '?', label: value };
+}
+
 /**
  * Three cards side by side on desktop, stacked on mobile.
  * Each card keeps the same information structure so the customer can compare
@@ -88,6 +95,30 @@ export default function ContractorSummaryCards({ contractors = [] }) {
             </div>
 
             <dl className="ec-contractor-facts">
+              <div>
+                <dt>Ownership &amp; Accountability</dt>
+                <dd>
+                  {(() => {
+                    const status = ownershipStatus(contractor);
+                    return (
+                      <span className={`ec-ownership-status ${status.className}`}>
+                        <span className="ec-ownership-icon" aria-hidden="true">{status.icon}</span>
+                        <span>{status.label}</span>
+                      </span>
+                    );
+                  })()}
+                </dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>{contractor.companyResearch?.organizationStatus || 'Unable to verify'}</dd>
+              </div>
+              {contractor.companyResearch?.sources?.length ? (
+                <div>
+                  <dt>Research sources</dt>
+                  <dd><ul className="ec-research-sources">{contractor.companyResearch.sources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a></li>)}</ul></dd>
+                </div>
+              ) : null}
               <div>
                 <dt>Price</dt>
                 <dd className="ec-fact-strong">{formatPrice(contractor.totalPrice)}</dd>

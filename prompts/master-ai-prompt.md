@@ -50,7 +50,7 @@ Recommended next steps:
 Questions to ask or information to gather:
 - Include missing information needed for a reliable recommendation.
 
-Soft CTA:
+Get in Touch With Our Team:
 Give value first, then recommend booking, upload review, second opinion, or inspection when appropriate.
 
 Disclaimer:

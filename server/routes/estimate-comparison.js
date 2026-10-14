@@ -177,6 +177,7 @@ router.post('/', comparisonLimiter, async (req, res, next) => {
           id: `contractor-${index + 1}`,
           // The homeowner's own label wins — they know which quote is which.
           contractorName: homeownerName || result.extraction.contractorName,
+          companyResearch: result.research,
           totalPrice: homeownerPrice ?? result.extraction.totalPrice,
           proposedMethod: result.extraction.proposedMethod,
           fields: result.extraction.fields,

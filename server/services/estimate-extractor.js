@@ -8,6 +8,8 @@
  * inventing scope.
  */
 
+import fs from 'fs/promises';
+import path from 'path';
 import { config } from '../config.js';
 import { getClient, extractOutputText, parseJsonFromText, buildMultimodalContent } from './openai-client.js';
 import { findUpload } from './storage.js';
@@ -42,7 +44,7 @@ ABSOLUTE RULES — violating any of these makes the output worthless:
 4. Never infer warranty coverage from generic phrases such as "lifetime warranty", "manufacturer warranty", "industry-leading warranty", "fully guaranteed", or "guaranteed work". Those phrases alone tell you NOTHING about labor coverage, materials, transferability, excavation, removal, reinstallation, diagnostics, restoration, exclusions, or duration. Each of those must be separately written to be reported.
 5. "Backfill included" NEVER means finished surface restoration is included. Never map one to the other.
 6. Contractor identity, brand, reputation, and company name must not influence any status. Apply identical strictness to every document.
-7. For ownership_accountability, if the document contains an explicit contractor license or registration number, report the value exactly as "Ownership verified" and use the license wording as the source text. If no license number is present, omit this field. Do not infer verification from a local address, phone number, company name, insurance statement, branding, or service area.
+7. Report ownership_accountability only when the document explicitly states who owns the company (for example "family-owned", "locally owned and operated", "independently owned", "a subsidiary of X", "a franchise of X"). Use status "I", the ownership wording as the value, and the exact sentence as the source text. Never infer ownership from a license number, address, phone number, service area, insurance, or branding — omit the field instead. Ownership is also researched separately using public web sources.
 
 STATUS CODES — assign exactly one per field you report:
   "I" = ${statusMeta[STATUS.INCLUDED].label}   — the document explicitly confirms this is part of the quoted scope/price.
@@ -109,6 +111,328 @@ Return ONLY a JSON object:
 }
 
 The "risks" array must ONLY reference contractorId + fieldKey pairs present in the "candidateRisks" input. You may re-rank, reword, and re-rate severity. You may NOT invent a risk that is not in candidateRisks. Return at most 8.`;
+
+const COMPANY_RESEARCH_INSTRUCTIONS = `Determine who owns the contractor named on a homeowner's sewer estimate. You have two kinds of evidence: (1) the identity and ownership details written in the uploaded estimate, given to you below, and (2) live web search. Use both.
+
+Determine:
+- organizationStatus:
+  - "Public organization" only for a government, municipal, or other public authority.
+  - "Publicly traded company" when the company — or the parent company that owns it — has shares listed on a stock exchange (for example Nasdaq or NYSE). Name the exchange and ticker in the explanation.
+  - "Private organization" for a privately held business whose shares are not publicly traded. A registered business form in the legal name (Inc., LLC, Corp., Co., Ltd., LP, LLP, PLLC) is sufficient evidence of a business, unless the web shows it is publicly traded or a public authority.
+  - "Unable to verify" otherwise.
+- ownershipAccountability:
+  - "Locally owned and operated" when the estimate, the company's own website, or an independent source describes it as locally, family, or independently owned (wording such as "family business", "family-owned", "locally owned", "local roots", "independent", or "third-generation" all count), and no matching source shows a parent company, private-equity owner, or national franchise behind it. A statement in the estimate is enough on its own even if the company cannot be found online; the explanation must then say the ownership is as stated by the contractor.
+  - "Large corporation owned" when any source shows a parent company, private-equity owner, national brand, or franchise system — and always when the company itself or its parent is publicly traded, because it is then owned by stock-market shareholders rather than local owners.
+  - "Ownership not verified" only when neither the document nor the web says anything about ownership, or the sources conflict.
+  A license, address, or service area alone proves nothing about ownership.
+  Before deciding, always check the company's own site for franchise, territory, partner, dealer, or licensing programs as well as its About page. If one source points to local ownership and another to a franchise, territory, or parent-company structure, do not pick one side: use "Ownership not verified" and describe both findings in the explanation.
+
+Search for the company's official website (especially About/Our Story pages), state business registries, BBB and similar listings, and news of acquisitions. Matching is critical: many contractors share common names. A web result counts as this company when the name AND a location (city/state or street address) or license number match the details you were given. When no location or license is available, a name match counts only if the name is distinctive and your search shows exactly one business using it; if several different businesses share the name, none of them count. Never claim a detail matched unless that detail appears in the details you were given. If no result matches, treat the company as not found online: say so in the explanation and decide from the document evidence alone.
+
+In "explanation" (2-4 sentences), state plainly what you found and where it came from — for example "stated on the company's About page" or "stated in the estimate; no parent company found online". If the deciding evidence is the contractor's own claim, say so.
+
+Also report the business you matched: "matchedLegalName" is its full registered legal name as shown by the registry, website, or estimate (for example "Acme Sewer Services Southeastern PA, LLC"), and "matchedAddress" is its business address. Use "" for both when no business matched.
+
+Return valid JSON only with exactly these keys: organizationStatus, ownershipAccountability, explanation, matchedLegalName, matchedAddress. Do not include citations or URLs in the JSON; citations are captured separately from the web-search results.`;
+
+function parseCompanyResearchJson(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // continue to fallback parsing below
+  }
+
+  const cleaned = raw.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // continue to regex fallback below
+  }
+
+  const next = {};
+  const keys = ['organizationStatus', 'ownershipAccountability', 'explanation', 'matchedLegalName', 'matchedAddress'];
+  for (const key of keys) {
+    const match = new RegExp(`"${key}"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)"`, 'i').exec(cleaned);
+    if (match) {
+      next[key] = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\u003c/g, '<').replace(/\\u003e/g, '>');
+    }
+  }
+
+  return Object.keys(next).length ? next : null;
+}
+
+function emptyCompanyResearch(explanation = 'Could not verify this company through web research.') {
+  return {
+    organizationStatus: 'Unable to verify',
+    ownershipAccountability: 'Ownership not verified',
+    explanation,
+    sources: []
+  };
+}
+
+function collectResearchSources(response) {
+  const sources = new Map();
+  const addSource = (source) => {
+    const rawUrl = source?.url || source?.url_citation?.url;
+    try {
+      const parsed = new URL(rawUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) return;
+      const url = parsed.href;
+      if (!sources.has(url)) {
+        sources.set(url, {
+          url,
+          title: cleanText(source.title || source.url_citation?.title || parsed.hostname, 160)
+        });
+      }
+    } catch {
+      return;
+    }
+  };
+
+  for (const item of response?.output || []) {
+    for (const source of item.action?.sources || []) addSource(source);
+    for (const content of item.content || []) {
+      for (const annotation of content.annotations || []) {
+        if (annotation.type === 'url_citation') addSource(annotation);
+      }
+    }
+  }
+
+  return sources;
+}
+
+const ORGANIZATION_VALUES = ['Public organization', 'Publicly traded company', 'Private organization'];
+const OWNERSHIP_VALUES = ['Locally owned and operated', 'Large corporation owned'];
+const BUSINESS_ENTITY_RE = /\b(?:inc|incorporated|llc|l\.l\.c|corp|corporation|co|company|ltd|limited|lp|llp|pllc|pc)\.?\s*$/i;
+
+// Identity and ownership details the estimate itself states, used as evidence alongside web search.
+const DOCUMENT_IDENTITY_FIELDS = [
+  ['legal_business_name', 'Legal business name'],
+  ['business_address', 'Business address'],
+  ['license_number', 'License / registration'],
+  ['ownership_accountability', 'Ownership statement'],
+  ['years_experience', 'Years of experience'],
+  ['installer_matches_named_contractor', 'Installing contractor'],
+  ['subcontractor_company_identified', 'Subcontractor company']
+];
+
+function documentIdentityLines(extraction = {}) {
+  const fields = extraction.fields || [];
+  const lines = [];
+  for (const [key, label] of DOCUMENT_IDENTITY_FIELDS) {
+    const field = fields.find((item) => item.key === key);
+    if (!field) continue;
+    const value = cleanText(field.value, 240);
+    const quote = cleanText(field.sourceText, 400);
+    if (value || quote) lines.push(`- ${label}: ${value || '(see quote)'}${quote && quote !== value ? ` — quote: "${quote}"` : ''}`);
+  }
+  if (extraction.documentNotes) lines.push(`- Document notes: ${cleanText(extraction.documentNotes, 500)}`);
+  return lines;
+}
+
+/* Company research cache                                              */
+/* Web search is not deterministic and each input mode (typed name,    */
+/* document, both) carries different evidence. Remembering the best    */
+/* answer per company keeps the same company from flip-flopping, and a */
+/* weaker later run can never downgrade an earlier verified answer.    */
+
+const RESEARCH_CACHE_FILE = path.join(config.dataDir, 'company-research-cache.json');
+const RESEARCH_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+// Bump whenever the research rules or answer values change, so older answers are looked up again.
+const RESEARCH_CACHE_VERSION = 3;
+const GENERIC_NAME_RE = /^(?:contractor|company|quote|estimate|bid)\s*\d*$/i;
+let researchCacheWrite = Promise.resolve();
+
+function companyKey(name) {
+  const key = String(name || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\b(?:inc|incorporated|llc|l l c|corp|corporation|co|company|ltd|limited|lp|llp|pllc|pc|the)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  // "Contractor 1" style placeholders identify nothing and must never share a cache entry.
+  return key && !GENERIC_NAME_RE.test(key) ? key : '';
+}
+
+async function readResearchCache() {
+  try {
+    return JSON.parse(await fs.readFile(RESEARCH_CACHE_FILE, 'utf8')) || {};
+  } catch {
+    return {};
+  }
+}
+
+const US_STATES = 'AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC'.split(' ');
+
+function locationOf(address = '') {
+  const text = String(address);
+  const zip = /\b(\d{5})(?:-\d{4})?\b/.exec(text)?.[1] || '';
+  const state = text.toUpperCase().match(/\b[A-Z]{2}\b/g)?.reverse().find((code) => US_STATES.includes(code)) || '';
+  return { zip, state };
+}
+
+// Same-named companies in different places are different companies; only a missing location is compatible.
+function locationsConflict(a = {}, b = {}) {
+  if (a.zip && b.zip) return a.zip !== b.zip;
+  if (a.state && b.state) return a.state !== b.state;
+  return false;
+}
+
+function writeResearchCache(keys, research, location) {
+  researchCacheWrite = researchCacheWrite
+    .then(async () => {
+      const cache = await readResearchCache();
+      const entry = { ...research, location, cachedAt: Date.now(), version: RESEARCH_CACHE_VERSION };
+      for (const key of keys) {
+        const others = (Array.isArray(cache[key]) ? cache[key] : []).filter((item) => locationsConflict(item.location, location));
+        cache[key] = [entry, ...others].slice(0, 10);
+      }
+      await fs.mkdir(path.dirname(RESEARCH_CACHE_FILE), { recursive: true });
+      await fs.writeFile(RESEARCH_CACHE_FILE, JSON.stringify(cache, null, 2), 'utf8');
+    })
+    .catch((error) => console.error('Could not save company research cache:', error));
+  return researchCacheWrite;
+}
+
+const isKnownOrganization = (research) => ORGANIZATION_VALUES.includes(research?.organizationStatus);
+const isKnownOwnership = (research) => OWNERSHIP_VALUES.includes(research?.ownershipAccountability);
+
+// Keep every verified answer; a fresh "unknown" never overrides an earlier finding.
+function mergeResearch(cached, fresh) {
+  if (!cached) return fresh;
+  const ownershipFrom = isKnownOwnership(fresh) || !isKnownOwnership(cached) ? fresh : cached;
+  const organizationFrom = isKnownOrganization(fresh) || !isKnownOrganization(cached) ? fresh : cached;
+  return {
+    organizationStatus: organizationFrom.organizationStatus,
+    ownershipAccountability: ownershipFrom.ownershipAccountability,
+    explanation: ownershipFrom.explanation,
+    sources: ownershipFrom.sources?.length ? ownershipFrom.sources : fresh.sources || []
+  };
+}
+
+async function researchCompany(openai, { contractorName, extraction }) {
+  const fieldValue = (key) => cleanText(extraction.fields?.find((field) => field.key === key)?.value, 240);
+  const legalName = fieldValue('legal_business_name') || cleanText(extraction.contractorName, 180);
+  const homeownerName = companyKey(contractorName) ? cleanText(contractorName, 180) : '';
+  const identity = legalName || homeownerName;
+  if (!identity) return emptyCompanyResearch('A company name was not found on the estimate, so ownership could not be researched.');
+
+  let location = locationOf(fieldValue('business_address'));
+  const keys = new Set([companyKey(legalName), companyKey(homeownerName)].filter(Boolean));
+
+  // Fully answered before under one of these names: reuse it so the company always shows the same result.
+  const known = await bestCachedResearch(keys, location);
+  if (known && isKnownOwnership(known.research) && isKnownOrganization(known.research)) {
+    await writeResearchCache(keys, known.research, mergeLocation(location, known.location));
+    return known.research;
+  }
+
+  const fresh = await runCompanyResearch(openai, { identity, legalName, homeownerName, extraction });
+  if (fresh.failed) return publicResearch(mergeResearch(known?.research, fresh));
+
+  // Name-only, document-only, and combined inputs all resolve to the same registered legal name,
+  // so the result is filed and looked up under that name too.
+  location = mergeLocation(location, locationOf(fresh.matchedAddress));
+  const canonicalKey = companyKey(fresh.matchedLegalName);
+  if (canonicalKey) keys.add(canonicalKey);
+  const canonical = canonicalKey ? await bestCachedResearch(new Set([canonicalKey]), location) : null;
+
+  const research = canonical && isKnownOwnership(canonical.research) && isKnownOrganization(canonical.research)
+    ? canonical.research
+    : mergeResearch(canonical?.research || known?.research, publicResearch(fresh));
+  await writeResearchCache(keys, research, mergeLocation(location, canonical?.location || known?.location));
+  return research;
+}
+
+function publicResearch({ organizationStatus, ownershipAccountability, explanation, sources }) {
+  return { organizationStatus, ownershipAccountability, explanation, sources: sources || [] };
+}
+
+function mergeLocation(a = {}, b = {}) {
+  return { zip: a.zip || b?.zip || '', state: a.state || b?.state || '' };
+}
+
+async function bestCachedResearch(keys, location) {
+  const cache = await readResearchCache();
+  const entry = [...keys]
+    .flatMap((key) => (Array.isArray(cache[key]) ? cache[key] : []))
+    .filter((item) => item.version === RESEARCH_CACHE_VERSION && Date.now() - item.cachedAt < RESEARCH_CACHE_TTL_MS && !locationsConflict(item.location, location))
+    .sort((a, b) => (isKnownOwnership(b) - isKnownOwnership(a)) || (isKnownOrganization(b) - isKnownOrganization(a)))[0];
+  return entry ? { research: publicResearch(entry), location: entry.location } : null;
+}
+
+async function runCompanyResearch(openai, { identity, legalName, homeownerName, extraction }) {
+  // A registered business form in either name is evidence of a private business on its own.
+  const entityName = [legalName, homeownerName].find((name) => BUSINESS_ENTITY_RE.test(name)) || '';
+  const documentShowsPrivateEntity = Boolean(entityName);
+  const documentLines = documentIdentityLines(extraction);
+
+  try {
+    const response = await openai.responses.create({
+      model: config.openaiModel,
+      instructions: COMPANY_RESEARCH_INSTRUCTIONS,
+      input: [
+        `Company to research: ${identity}`,
+        homeownerName && homeownerName !== identity ? `The homeowner entered this company name: ${homeownerName}` : '',
+        documentLines.length
+          ? `Identity details written in the uploaded estimate:\n${documentLines.join('\n')}`
+          : 'The uploaded estimate states no identity details beyond the company name.',
+        'Search the web for this company, then return JSON only with exactly these keys: organizationStatus, ownershipAccountability, explanation, matchedLegalName, matchedAddress.'
+      ].filter(Boolean).join('\n\n'),
+      tools: [{ type: 'web_search', search_context_size: 'medium' }],
+      tool_choice: 'required',
+      include: ['web_search_call.action.sources'],
+      // Reasoning models spend part of this budget thinking; too small a limit returns no text at all.
+      max_output_tokens: 5000
+    });
+
+    const rawText = extractOutputText(response) || response.output_text || '';
+    const json = parseCompanyResearchJson(rawText) || parseJsonFromText(rawText);
+    const sources = [...collectResearchSources(response).values()].slice(0, 5);
+
+    if (!json) {
+      console.warn('Contractor web research returned no usable JSON:', { identity, status: response.status, incomplete: response.incomplete_details });
+    }
+
+    let organizationStatus = ORGANIZATION_VALUES.includes(json?.organizationStatus) ? json.organizationStatus : 'Unable to verify';
+    let ownershipAccountability = OWNERSHIP_VALUES.includes(json?.ownershipAccountability) ? json.ownershipAccountability : 'Ownership not verified';
+    let explanation = cleanText(json?.explanation, 700);
+
+    // A publicly traded company is owned by stock-market shareholders, never by local owners.
+    if (organizationStatus === 'Publicly traded company' && ownershipAccountability !== 'Large corporation owned') {
+      ownershipAccountability = 'Large corporation owned';
+      explanation = `${explanation ? `${explanation} ` : ''}As a publicly traded company, it is owned by its stock-market shareholders and is classed as large corporation owned.`;
+    }
+
+    if (organizationStatus === 'Unable to verify' && documentShowsPrivateEntity) {
+      organizationStatus = 'Private organization';
+      explanation = `${explanation ? `${explanation} ` : ''}The company name "${entityName}" is a registered business entity, which identifies a privately operated business.`;
+    }
+
+    return {
+      organizationStatus,
+      ownershipAccountability,
+      explanation: explanation || 'Web search did not find enough information about this company to confirm its ownership.',
+      sources,
+      matchedLegalName: cleanText(json?.matchedLegalName, 180),
+      matchedAddress: cleanText(json?.matchedAddress, 240),
+      // Unparseable replies are not remembered, so the next run gets a fresh attempt.
+      failed: !json
+    };
+  } catch (error) {
+    console.error('Contractor web research failed:', error);
+    const fallback = { ...emptyCompanyResearch('Web research was unavailable; ownership was not verified.'), failed: true };
+    if (documentShowsPrivateEntity) {
+      fallback.organizationStatus = 'Private organization';
+      fallback.explanation += ` The company name "${entityName}" is a registered business entity.`;
+    }
+    return fallback;
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /* Extraction                                                          */
@@ -206,6 +530,7 @@ export async function extractEstimate({ contractorName, uploadedFileIds = [], pa
       extraction: emptyExtraction(
         'AI extraction is not configured on this server, so no fields could be read from this document. Every item is shown as Not Stated rather than guessed.'
       ),
+      research: emptyCompanyResearch('AI web research is not configured on this server.'),
       fileName
     };
   }
@@ -235,16 +560,18 @@ export async function extractEstimate({ contractorName, uploadedFileIds = [], pa
     const raw = extractOutputText(response);
     const json = parseJsonFromText(raw);
     const extraction = normalizeExtractionPayload(json);
+    const research = await researchCompany(openai, { contractorName, extraction: extraction || {} });
 
     if (!extraction) {
       return {
         mode: 'parse-error',
         extraction: emptyExtraction("We couldn't read this estimate reliably. Try uploading a clearer PDF or image."),
+        research,
         fileName
       };
     }
 
-    return { mode: 'openai', extraction, fileName, responseId: response.id || null };
+    return { mode: 'openai', extraction, research, fileName, responseId: response.id || null };
   } catch (error) {
     console.error('Estimate extraction failed:', error);
     return {
@@ -252,6 +579,8 @@ export async function extractEstimate({ contractorName, uploadedFileIds = [], pa
       extraction: emptyExtraction(
         "We couldn't read this estimate. Try uploading a clearer PDF or image, or paste the estimate text instead."
       ),
+      // Skip web research here: the failure is usually an API/network problem, so a second call would likely fail too.
+      research: emptyCompanyResearch('Web research was skipped because the estimate could not be read.'),
       fileName
     };
   }

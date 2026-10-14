@@ -50,16 +50,25 @@ function FieldEvidence({ contractors, fieldKey }) {
 }
 
 function OwnershipStatus({ contractor }) {
-  const license = contractor.fields.find((field) => field.key === 'license_number');
-  const meta = license?.value
-    ? { className: 'is-local', icon: '✓', label: 'Ownership verified' }
-    : { className: 'is-unknown', icon: '?', label: 'Ownership not verified' };
+  const value = contractor.companyResearch?.ownershipAccountability || 'Ownership not verified';
+  const meta = value === 'Large corporation owned'
+    ? { className: 'is-corporate', icon: '⚠', label: value }
+    : value === 'Locally owned and operated'
+      ? { className: 'is-local', icon: '✓', label: value }
+      : { className: 'is-unknown', icon: '?', label: value };
 
   return (
-    <span className={`ec-ownership-status ${meta.className}`} title={meta.label}>
-      <span className="ec-ownership-icon" aria-hidden="true">{meta.icon}</span>
-      <span>{meta.label}</span>
-    </span>
+    <div>
+      <span className={`ec-ownership-status ${meta.className}`} title={meta.label}>
+        <span className="ec-ownership-icon" aria-hidden="true">{meta.icon}</span>
+        <span>{meta.label}</span>
+      </span>
+      {contractor.companyResearch?.sources?.length ? (
+        <ul className="ec-research-sources">
+          {contractor.companyResearch.sources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a></li>)}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 

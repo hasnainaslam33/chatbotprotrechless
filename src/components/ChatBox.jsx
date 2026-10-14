@@ -108,25 +108,45 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const listRef = useRef(null);
+  const [started, setStarted] = useState(false);
+  const assistantStartRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
+  const newestAssistant = messages.filter((message) => message.role === 'assistant').at(-1);
   useEffect(() => {
-    if (open) {
-      setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }), 80);
-    }
-  }, [messages, open]);
+    if (!newestAssistant || !assistantStartRef.current || !scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    const target = assistantStartRef.current;
+    const targetTop = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+    container.scrollTo({ top: Math.max(0, targetTop - 8), behavior: 'smooth' });
+  }, [newestAssistant?.id]);
 
-  async function sendMessage() {
-    const text = String(input || '').trim();
-    if (!text) return;
-    const userMsg = { role: 'user', content: text };
-    setMessages((m) => [...m, userMsg]);
+  async function sendMessage(textOverride) {
+    const text = String(textOverride ?? input ?? '').trim();
+    if (!text || loading) return;
+    setStarted(true);
+    const userMsg = {
+      id: `user-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      role: 'user',
+      content: text,
+      time: Date.now()
+    };
+    const thinkingMsg = {
+      id: `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      role: 'assistant',
+      isThinking: true,
+      content: '...',
+      time: Date.now()
+    };
+    setMessages((current) => [...current, userMsg, thinkingMsg]);
     setInput('');
     setLoading(true);
     // Short-circuit very short greetings with a concise local reply to avoid long AI responses
     const greetingRe = /^(hi|hello|hey|howdy|good\s(morning|afternoon|evening))\b[.!]?$/i;
     if (greetingRe.test(text) && text.length < 20) {
-      setMessages((m) => [...m, { role: 'assistant', content: 'Hi — how can I help? Ask a brief question about drains or sewer issues.' }]);
+      setMessages((current) => current.map((message) => message.id === thinkingMsg.id
+        ? { ...message, isThinking: false, time: Date.now(), content: 'Hi — how can I help? Ask a brief question about drains or sewer issues.' }
+        : message));
       setLoading(false);
       return;
     }
@@ -139,9 +159,13 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
       });
       const data = await resp.json();
       const answer = (data && data.answer) ? data.answer : 'Sorry — no answer available.';
-      setMessages((m) => [...m, { role: 'assistant', content: answer }]);
+      setMessages((current) => current.map((message) => message.id === thinkingMsg.id
+        ? { ...message, isThinking: false, time: Date.now(), content: answer }
+        : message));
     } catch (err) {
-      setMessages((m) => [...m, { role: 'assistant', content: 'Error contacting server. Try again later.' }]);
+      setMessages((current) => current.map((message) => message.id === thinkingMsg.id
+        ? { ...message, isThinking: false, time: Date.now(), content: 'Error contacting server. Try again later.' }
+        : message));
     } finally {
       setLoading(false);
     }
@@ -163,13 +187,47 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
       )}
 
       {open && (
-        <div className={`chat-panel panel ${inline ? 'chat-embedded' : ''}`}>
+        <div className={`chat-panel panel ${inline ? 'chat-embedded' : ''} ${started ? 'chat-started' : ''}`}>
           {inline ? (
-            <div className="chat-hero">
-              <h2 className="chat-hero-title">How can we help you today?</h2>
-              <p className="chat-hero-sub">Chat with Flo for fast help with sewer and drain answers or scheduling.</p>
+            <div className="chat-shell">
+              <div className={`chat-hero ${started ? 'is-hidden' : ''}`}>
+                <h2 className="chat-hero-title">How can we help you today?</h2>
+                <p className="chat-hero-sub">Chat with Flo for fast help with sewer and drain answers or scheduling.</p>
+              </div>
 
-              <div className="chat-input-bar">
+              <div ref={scrollContainerRef} className={`chat-message-stream ${started ? 'is-visible' : ''}`}>
+                <div className="chat-messages">
+                  {messages.map((message, index) => {
+                    const isAssistant = message.role === 'assistant';
+                    const isNewestAssistant = isAssistant && message.id === newestAssistant?.id;
+                    return (
+                      <div
+                        key={message.id ?? `${message.role}-${index}`}
+                        ref={isNewestAssistant ? assistantStartRef : null}
+                        className={`msg ${isAssistant ? 'assistant' : 'user'}`}
+                      >
+                        <div className={`avatar ${isAssistant ? 'avatar-assistant' : 'avatar-user'}`} aria-hidden>
+                          {isAssistant ? '🤖' : '👤'}
+                        </div>
+                        <div className="msg-content">
+                          <div className={`bubble ${isAssistant ? 'assistant-bubble' : 'user'} ${message.isThinking ? 'thinking-bubble' : ''}`}>
+                            {message.isThinking ? (
+                              <div className="thinking-wrap" aria-label="Flo is thinking" role="status">
+                                <span className="thinking-dot" />
+                                <span className="thinking-dot" />
+                                <span className="thinking-dot" />
+                              </div>
+                            ) : isAssistant ? <FormattedResponse text={message.content} /> : message.content}
+                          </div>
+                          <div className="ts mini">{new Date(message.time ?? Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className={`chat-composer ${started ? 'is-bottom' : 'is-center'}`}>
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -184,10 +242,10 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
                 </div>
               </div>
 
-              <div className="chat-suggested">
-                <button className="suggestion" onClick={() => setInput('Why is my basement backing up when it rains?')}>Why is my basement backing up?</button>
-                <button className="suggestion" onClick={() => setInput('How much does a camera inspection cost?')}>Camera inspection cost</button>
-                <button className="suggestion" onClick={() => setInput('What causes recurring clogs?')}>Recurring clogs causes</button>
+              <div className={`chat-suggested ${started ? 'is-hidden' : ''}`}>
+                <button className="suggestion" onClick={() => sendMessage('Why is my basement backing up when it rains?')}>Why is my basement backing up?</button>
+                <button className="suggestion" onClick={() => sendMessage('How much does a camera inspection cost?')}>Camera inspection cost</button>
+                <button className="suggestion" onClick={() => sendMessage('What causes recurring clogs?')}>Recurring clogs causes</button>
               </div>
             </div>
           ) : (
@@ -202,26 +260,36 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
             </div>
           )}
 
-          <div className="chat-conversation panel" style={{ marginTop: '1rem' }}>
-            <div ref={listRef} className="chat-messages" style={{ maxHeight: inline ? '60vh' : '320px', overflow: 'auto', padding: '1rem' }}>
+          {!inline && <div className="chat-conversation panel" style={{ marginTop: '1rem' }}>
+            <div ref={scrollContainerRef} className="chat-messages" style={{ maxHeight: '320px', overflow: 'auto', padding: '1rem' }}>
               {messages.length === 0 && (
-                <div className="bubble">{inline ? 'Ask Flo a question and get a quick answer.' : 'Hi — ask any question about drains, sewer problems, or repairs.'}</div>
+                <div className="bubble">Hi — ask any question about drains, sewer problems, or repairs.</div>
               )}
-              {messages.map((m, i) => (
-                <div key={i} className={`msg ${m.role === 'user' ? 'user' : 'assistant'}`} style={{ marginTop: '0.6rem' }}>
-                  <div className={`avatar ${m.role === 'user' ? 'avatar-user' : 'avatar-assistant'}`} aria-hidden>
-                    {m.role === 'user' ? '👤' : '🤖'}
-                  </div>
-                  <div className="msg-content">
-                    <div className={`bubble ${m.role === 'user' ? 'user' : 'assistant-bubble'}`}>
-                      {m.role === 'user' ? m.content : <FormattedResponse text={m.content} />}
+              {messages.map((message, index) => {
+                const isAssistant = message.role === 'assistant';
+                const isNewestAssistant = isAssistant && message.id === newestAssistant?.id;
+                return (
+                  <div key={message.id ?? `${message.role}-${index}`} ref={isNewestAssistant ? assistantStartRef : null} className={`msg ${isAssistant ? 'assistant' : 'user'}`}>
+                    <div className={`avatar ${isAssistant ? 'avatar-assistant' : 'avatar-user'}`} aria-hidden>
+                      {isAssistant ? '🤖' : '👤'}
                     </div>
-                    <div className="ts mini">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    <div className="msg-content">
+                      <div className={`bubble ${isAssistant ? 'assistant-bubble' : 'user'} ${message.isThinking ? 'thinking-bubble' : ''}`}>
+                        {message.isThinking ? (
+                          <div className="thinking-wrap" aria-label="Flo is thinking" role="status">
+                            <span className="thinking-dot" />
+                            <span className="thinking-dot" />
+                            <span className="thinking-dot" />
+                          </div>
+                        ) : isAssistant ? <FormattedResponse text={message.content} /> : message.content}
+                      </div>
+                      <div className="ts mini">{new Date(message.time ?? Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          </div>
+          </div>}
 
           {!inline && (
             <div className="chat-input" style={{ marginTop: '0.9rem', display: 'flex', gap: '0.6rem' }}>

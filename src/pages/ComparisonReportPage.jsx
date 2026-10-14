@@ -30,9 +30,10 @@ function scoreTone(score) {
 }
 
 function ownershipStatus(company) {
-  const license = company.fields?.find((field) => field.key === 'license_number');
-  if (license?.value) return { className: 'is-local', icon: '✓', label: 'Ownership verified' };
-  return { className: 'is-unknown', icon: '?', label: 'Ownership not verified' };
+  const value = company.companyResearch?.ownershipAccountability || 'Ownership not verified';
+  if (value === 'Large corporation owned') return { className: 'is-corporate', icon: '⚠', label: value };
+  if (value === 'Locally owned and operated') return { className: 'is-local', icon: '✓', label: value };
+  return { className: 'is-unknown', icon: '?', label: value };
 }
 
 export default function ComparisonReportPage() {
@@ -189,6 +190,16 @@ export default function ComparisonReportPage() {
                       })()}
                     </dd>
                   </div>
+                  <div>
+                    <dt>Status</dt>
+                    <dd>{company.companyResearch?.organizationStatus || 'Unable to verify'}</dd>
+                  </div>
+                  {company.companyResearch?.sources?.length ? (
+                    <div>
+                      <dt>Research sources</dt>
+                      <dd><ul className="ec-research-sources">{company.companyResearch.sources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a></li>)}</ul></dd>
+                    </div>
+                  ) : null}
                   <div>
                     <dt>Price</dt>
                     <dd>{formatPrice(company.totalPrice)}</dd>
