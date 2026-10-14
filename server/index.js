@@ -72,17 +72,26 @@ const distDir = path.join(config.rootDir, 'dist');
 const uiEntry = path.join(distDir, 'index.html');
 const fallbackEntry = path.join(config.publicDir, 'index.html');
 
+// HTML must always be revalidated so a new deploy is picked up immediately; it points
+// at content-hashed bundles, which can be cached.
+const noCacheHtml = (res, filePath) => {
+  if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+};
+
 app.use(express.static(distDir, {
-  maxAge: config.nodeEnv === 'production' ? '1h' : 0
+  maxAge: config.nodeEnv === 'production' ? '1h' : 0,
+  setHeaders: noCacheHtml
 }));
 app.use(express.static(config.publicDir, {
   extensions: ['html'],
-  maxAge: config.nodeEnv === 'production' ? '1h' : 0
+  maxAge: config.nodeEnv === 'production' ? '1h' : 0,
+  setHeaders: noCacheHtml
 }));
 
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
   const entryPath = existsSync(uiEntry) ? uiEntry : fallbackEntry;
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(entryPath);
 });
 
