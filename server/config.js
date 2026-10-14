@@ -28,8 +28,9 @@ export const config = {
   rootDir,
   envPath,
   publicDir: path.join(rootDir, 'public'),
-  dataDir: path.join(rootDir, process.env.DATA_DIR || 'data'),
-  uploadDir: path.join(rootDir, process.env.UPLOAD_DIR || 'uploads'),
+  // resolve() accepts absolute paths too, e.g. a mounted volume like /data/data on Railway.
+  dataDir: path.resolve(rootDir, process.env.DATA_DIR || 'data'),
+  uploadDir: path.resolve(rootDir, process.env.UPLOAD_DIR || 'uploads'),
   port: intEnv('PORT', 3000),
   nodeEnv: process.env.NODE_ENV || 'development',
   publicBaseUrl: process.env.PUBLIC_BASE_URL || 'http://localhost:3000',
