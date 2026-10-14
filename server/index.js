@@ -24,12 +24,17 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false
 }));
-app.use(cors({
-  origin(origin, cb) {
-    if (!origin || config.corsOrigin === '*' || origin === config.corsOrigin || origin === config.publicBaseUrl) return cb(null, true);
-    return cb(new Error(`CORS blocked origin: ${origin}`));
-  },
-  credentials: true
+// CORS_ORIGIN may list several origins separated by commas; trailing slashes are ignored.
+const trimOrigin = (value = '') => String(value).trim().replace(/\/+$/, '');
+const allowedOrigins = new Set([...config.corsOrigin.split(','), config.publicBaseUrl].map(trimOrigin).filter(Boolean));
+
+app.use(cors((req, cb) => {
+  const origin = trimOrigin(req.get('origin'));
+  // The site calling its own API is always allowed, whatever address it is served from.
+  const sameOrigin = origin === `${req.protocol}://${req.get('host')}`;
+  const allowed = !origin || sameOrigin || allowedOrigins.has('*') || allowedOrigins.has(origin);
+  if (!allowed) return cb(Object.assign(new Error(`CORS blocked origin: ${origin}`), { status: 403 }));
+  return cb(null, { origin: true, credentials: true });
 }));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
