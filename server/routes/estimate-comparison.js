@@ -211,7 +211,8 @@ router.post('/', comparisonLimiter, async (req, res, next) => {
       reportDate: analyzedAt,
       customer,
       customerAddress: `${customer.streetAddress}, ${customer.city}, ${customer.state} ${customer.zipCode}`,
-      reportUrl: `${config.publicBaseUrl}/comparison/${reportId}/${reportToken}`,
+      // Without PUBLIC_BASE_URL, link to the address the homeowner is actually using rather than localhost.
+      reportUrl: `${(process.env.PUBLIC_BASE_URL ? config.publicBaseUrl : `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '')}/comparison/${reportId}/${reportToken}`,
       analyzedAt,
       mode: synthesis.mode,
       contractors,

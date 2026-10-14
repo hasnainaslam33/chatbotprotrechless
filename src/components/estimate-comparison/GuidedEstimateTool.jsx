@@ -175,8 +175,9 @@ export default function GuidedEstimateTool({ page }) {
       );
       setStep(2);
       setPhase(PHASE.RESULTS);
-      if (data?.reportUrl) {
-        window.history.replaceState(null, '', data.reportUrl.replace(window.location.origin, ''));
+      // Build the path from the report ids so a misconfigured server base URL can never break the page.
+      if (data?.reportId && data?.reportToken) {
+        window.history.replaceState(null, '', `/comparison/${data.reportId}/${data.reportToken}`);
       }
       window.setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
     } catch (error) {
