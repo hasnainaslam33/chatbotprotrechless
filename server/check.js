@@ -3,8 +3,8 @@ import path from 'path';
 import { config } from './config.js';
 
 const required = [
-  'public/index.html',
-  'public/js/app.js',
+  'src/index.html',
+  'src/App.jsx',
   'server/index.js',
   'server/routes/chat.js',
   'server/routes/leads.js',

@@ -68,6 +68,9 @@ app.use('/api/events', eventRoutes);
 app.use('/api/modules', moduleRoutes);
 app.use('/api/estimate-comparison', estimateComparisonRoutes);
 
+// Old static tool pages lived at /tools/<slug>.html; the React app now serves /tools/<slug>.
+app.get('/tools/:slug.html', (req, res) => res.redirect(301, `/tools/${req.params.slug}`));
+
 const distDir = path.join(config.rootDir, 'dist');
 const uiEntry = path.join(distDir, 'index.html');
 const fallbackEntry = path.join(config.publicDir, 'index.html');
