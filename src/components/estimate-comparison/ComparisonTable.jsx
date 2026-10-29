@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { comparisonCategories, STATUS } from '../../lib/comparisonConfig.js';
+import { comparisonCategories, CORPORATE_OWNERSHIP, STATUS } from '../../lib/comparisonConfig.js';
 import StatusBadge from './StatusBadge.jsx';
 
 function FieldEvidence({ contractors, fieldKey }) {
@@ -51,7 +51,7 @@ function FieldEvidence({ contractors, fieldKey }) {
 
 function OwnershipStatus({ contractor }) {
   const value = contractor.companyResearch?.ownershipAccountability || 'Ownership not verified';
-  const meta = value === 'Large corporation owned'
+  const meta = CORPORATE_OWNERSHIP.includes(value)
     ? { className: 'is-corporate', icon: '⚠', label: value }
     : value === 'Locally owned and operated'
       ? { className: 'is-local', icon: '✓', label: value }

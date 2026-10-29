@@ -117,23 +117,40 @@ const COMPANY_RESEARCH_INSTRUCTIONS = `Determine who owns the contractor named o
 Determine:
 - organizationStatus:
   - "Public organization" only for a government, municipal, or other public authority.
-  - "Publicly traded company" when the company — or the parent company that owns it — has shares listed on a stock exchange (for example Nasdaq or NYSE). Name the exchange and ticker in the explanation.
-  - "Private organization" for a privately held business whose shares are not publicly traded. A registered business form in the legal name (Inc., LLC, Corp., Co., Ltd., LP, LLP, PLLC) is sufficient evidence of a business, unless the web shows it is publicly traded or a public authority.
+  - "Publicly traded company" only when an official exchange, company investor-relations page, or regulatory filing establishes that the company or its parent is listed. Include ticker and exchange in the explanation.
+  - "Private organization" when a primary source explicitly establishes private ownership/holding status. A LinkedIn company page whose Type field says "Privately Held" may support this status as a self-reported secondary classification; explain that limitation. Do not treat that label as evidence of who owns shares or who holds a majority. A state entity registration, LLC/Inc. suffix, absence of a stock ticker in search results, or a BBB listing does NOT establish private ownership.
   - "Unable to verify" otherwise.
 - ownershipAccountability:
-  - "Locally owned and operated" when the estimate, the company's own website, or an independent source describes it as locally, family, or independently owned (wording such as "family business", "family-owned", "locally owned", "local roots", "independent", or "third-generation" all count), and no matching source shows a parent company, private-equity owner, or national franchise behind it. A statement in the estimate is enough on its own even if the company cannot be found online; the explanation must then say the ownership is as stated by the contractor.
-  - "Large corporation owned" when any source shows a parent company, private-equity owner, national brand, or franchise system — and always when the company itself or its parent is publicly traded, because it is then owned by stock-market shareholders rather than local owners.
-  - "Ownership not verified" only when neither the document nor the web says anything about ownership, or the sources conflict.
+  - "Locally owned and operated" only when a matching source explicitly states local, family, or independent ownership and no reliable evidence contradicts it. If the only evidence is the contractor's own marketing claim, explain that it is self-reported.
+  - "Large corporation owned" only when reliable, company-specific evidence establishes control by a parent, private-equity firm, corporate group, or franchise system. A publicly traded status alone does not establish that the company is "large corporation owned" under this label.
+  - "PE-backed platform" when reliable, company-specific evidence shows the contractor was acquired by or belongs to a platform that is majority-owned or controlled by a private-equity firm, even if it keeps its local trade name. Prefer this over "Large corporation owned" when the sponsor is PE.
+  - "Franchise" only when reliable evidence shows the contractor operates as a franchisee or under a franchise/licensing system of a national brand.
+  - "Publicly traded (shareholder-owned)" when an official source establishes that the contractor itself is publicly traded. This does not mean a named investor or parent company owns a majority.
+  - "Ownership not verified" whenever the evidence is absent, ambiguous, mismatched, or conflicting. A privately-held classification does not establish a named owner, local control, or absence of PE investment.
   A license, address, or service area alone proves nothing about ownership.
-  Before deciding, always check the company's own site for franchise, territory, partner, dealer, or licensing programs as well as its About page. If one source points to local ownership and another to a franchise, territory, or parent-company structure, do not pick one side: use "Ownership not verified" and describe both findings in the explanation.
+  A dealer, partner, territory, or licensing program is not by itself proof that a company is a franchise or that another company owns it.
 
-Search for the company's official website (especially About/Our Story pages), state business registries, BBB and similar listings, and news of acquisitions. Matching is critical: many contractors share common names. A web result counts as this company when the name AND a location (city/state or street address) or license number match the details you were given. When no location or license is available, a name match counts only if the name is distinctive and your search shows exactly one business using it; if several different businesses share the name, none of them count. Never claim a detail matched unless that detail appears in the details you were given. If no result matches, treat the company as not found online: say so in the explanation and decide from the document evidence alone.
+Search primary sources first: official company pages/disclosures, filings, acquisition announcements, and parent/portfolio pages. Use state registries to establish legal registration only, and directories/BBB as secondary identity evidence only. A matching LinkedIn company page may support a clearly attributed, self-reported "Privately Held" organization status, but not a specific owner, majority ownership, local control, or absence of PE investment. Matching is critical: a web result counts as this company when name AND location (city/state/address) or a license number match supplied details. Without location or license, match only a distinctive name with no plausible namesake. Never use unrelated companies or sources to fill a field. If identity is ambiguous, say so and return unable_to_verify for ownership details.
 
-In "explanation" (2-4 sentences), state plainly what you found and where it came from — for example "stated on the company's About page" or "stated in the estimate; no parent company found online". If the deciding evidence is the contractor's own claim, say so.
+A founder, executive, spokesperson, or family-trade-history statement does not by itself establish current equity ownership or majority control. Likewise, absence from an industry rollup or PE database is not proof that a company has never had PE ownership.
 
-Also report the business you matched: "matchedLegalName" is its full registered legal name as shown by the registry, website, or estimate (for example "Acme Sewer Services Southeastern PA, LLC"), and "matchedAddress" is its business address. Use "" for both when no business matched.
+Always read the company's own About, history, and homepage content before concluding. If those pages describe it as a family business, family-owned, locally owned, or independent, and no source shows a parent, PE owner, or franchise, report ownershipAccountability "Locally owned and operated" and say in the explanation that this is self-reported by the company. For currentMajorityOwner: if the company's own pages or a press release naming the company call a specific person its "owner", "founder", or "president" (for example "Jane Doe, Owner of X"), use status "unverified" with value "Jane Doe (named as owner/founder by the company; equity not independently confirmed)", the exact quote, and that page URL. If only family or local ownership is described without a name, use the self-reported description (for example "Family-owned (self-reported by the company)"). Never invent a name that no source states, and never claim registered equity ownership from a title alone.
 
-Return valid JSON only with exactly these keys: organizationStatus, ownershipAccountability, explanation, matchedLegalName, matchedAddress. Do not include citations or URLs in the JSON; citations are captured separately from the web-search results.`;
+For "acquirerPlatform" and "priorPeOwner" only: if you searched the company and its brand with "acquired by", "private equity", "portfolio company", and "majority stake", checked the company's own site, and found nothing about an acquirer or PE owner for this specific company, use status "none_found" with value "None found in public sources" and put a one-sentence summary of what you searched in "evidence". This is not proof that none exists. Use "none_found" only after real searches and only when identity is clearly matched; otherwise use "unable_to_verify".
+
+Also determine four ownership details independently:
+- "localBrand": the public-facing operating/trade brand. An official company website using the name as its brand is suitable evidence; prefer its About or homepage over a terms/footer page or directory profile heading. Do not substitute the registered legal entity name or a website domain. Add a former name only if an official company page explicitly states the old name and the rename, e.g. "Adam Mechanical officially became Adam Home Services". For a renamed company, quote that complete sentence as evidence and cite the official rename/About page, not a general services listing.
+- "acquirerPlatform": name an acquirer or platform only when a primary source or reputable direct announcement explicitly says this specific company/brand was acquired or joined that platform. A directory listing, shared branding, or common address is not evidence.
+- "currentMajorityOwner": name an owner only when a current primary source or filing directly establishes majority equity ownership or control. Do not name a parent, investor, lender, adviser, or shareholder as majority owner unless the source establishes majority ownership/control. Public-company status does not identify a majority shareholder.
+- "priorPeOwner": name a former private-equity owner only when a reliable source directly establishes its past ownership of this specific company AND its exit/sale of that stake. A source saying it invested or partnered is not enough to call it a prior owner. Do not mistake an adviser, lender, or minority investor for an owner.
+
+For each detail return an object with exactly these keys: "value", "status", "evidence", "eventDate", "sourceUrls". "status" must be "verified", "unverified", "none_found" (acquirerPlatform and priorPeOwner only), or "unable_to_verify". For verified claims, evidence must be a short, exact quotation from the cited source that directly supports the claim; do not paraphrase a source as a quote. If the source only suggests a possibility or sources conflict, use "unverified", explain the limitation, and cite relevant URLs. When there is no direct evidence, use "unable_to_verify", empty value, empty evidence, empty eventDate, and an empty sourceUrls array. Never manufacture a date, quote, source, legal entity, or relationship. sourceUrls must contain only direct URLs returned by web search, not guessed URLs. eventDate should be the relevant acquisition/name-change/ownership date only if explicitly stated; otherwise use an empty string.
+
+Also return "organizationEvidence" and "ownershipEvidence" objects, each with exactly "evidence" and "sourceUrls". The evidence must be a short, exact source quotation directly supporting the selected classification, and sourceUrls must be URLs returned by web search. If there is no direct evidence, use empty strings and an empty array. A legal registry entry establishes registration, not private ownership. Do not call a company private solely because it is not found in exchange searches.
+
+In "explanation" (2-4 sentences), state plainly what you found and where it came from. Report "matchedLegalName" and "matchedAddress" only when the entity is a credible match; otherwise use empty strings.
+
+Return valid JSON only with exactly these keys: organizationStatus, organizationEvidence, ownershipAccountability, ownershipEvidence, explanation, matchedLegalName, matchedAddress, ownershipDetails. ownershipDetails must contain exactly localBrand, acquirerPlatform, currentMajorityOwner, priorPeOwner with the object shape above. Do not treat an officer, manager, registered agent, shared address, similar name, or LLC/Inc. suffix as evidence of equity ownership. Citations are also captured separately from web-search results.`;
 
 function parseCompanyResearchJson(text) {
   const raw = String(text || '').trim();
@@ -164,12 +181,26 @@ function parseCompanyResearchJson(text) {
   return Object.keys(next).length ? next : null;
 }
 
+const OWNERSHIP_DETAIL_KEYS = ['localBrand', 'acquirerPlatform', 'currentMajorityOwner', 'priorPeOwner'];
+
+function unknownOwnershipClaim() {
+  return { value: 'Unable to verify', status: 'unable_to_verify', evidence: '', eventDate: '', sources: [] };
+}
+
+function emptyOwnershipDetails() {
+  return Object.fromEntries(OWNERSHIP_DETAIL_KEYS.map((key) => [key, unknownOwnershipClaim()]));
+}
+
 function emptyCompanyResearch(explanation = 'Could not verify this company through web research.') {
   return {
     organizationStatus: 'Unable to verify',
     ownershipAccountability: 'Ownership not verified',
     explanation,
-    sources: []
+    sources: [],
+    organizationEvidence: { evidence: '', sources: [] },
+    ownershipEvidence: { evidence: '', sources: [] },
+    ownershipDetails: emptyOwnershipDetails(),
+    retrievedAt: ''
   };
 }
 
@@ -205,9 +236,7 @@ function collectResearchSources(response) {
 }
 
 const ORGANIZATION_VALUES = ['Public organization', 'Publicly traded company', 'Private organization'];
-const OWNERSHIP_VALUES = ['Locally owned and operated', 'Large corporation owned'];
-const BUSINESS_ENTITY_RE = /\b(?:inc|incorporated|llc|l\.l\.c|corp|corporation|co|company|ltd|limited|lp|llp|pllc|pc)\.?\s*$/i;
-
+const OWNERSHIP_VALUES = ['Locally owned and operated', 'Large corporation owned', 'PE-backed platform', 'Franchise', 'Publicly traded (shareholder-owned)'];
 // Identity and ownership details the estimate itself states, used as evidence alongside web search.
 const DOCUMENT_IDENTITY_FIELDS = [
   ['legal_business_name', 'Legal business name'],
@@ -242,7 +271,7 @@ function documentIdentityLines(extraction = {}) {
 const RESEARCH_CACHE_FILE = path.join(config.dataDir, 'company-research-cache.json');
 const RESEARCH_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 // Bump whenever the research rules or answer values change, so older answers are looked up again.
-const RESEARCH_CACHE_VERSION = 3;
+const RESEARCH_CACHE_VERSION = 16;
 const GENERIC_NAME_RE = /^(?:contractor|company|quote|estimate|bid)\s*\d*$/i;
 let researchCacheWrite = Promise.resolve();
 
@@ -310,7 +339,15 @@ function mergeResearch(cached, fresh) {
     organizationStatus: organizationFrom.organizationStatus,
     ownershipAccountability: ownershipFrom.ownershipAccountability,
     explanation: ownershipFrom.explanation,
-    sources: ownershipFrom.sources?.length ? ownershipFrom.sources : fresh.sources || []
+    sources: ownershipFrom.sources?.length ? ownershipFrom.sources : fresh.sources || [],
+    organizationEvidence: organizationFrom.organizationEvidence || fresh.organizationEvidence || { evidence: '', sources: [] },
+    ownershipEvidence: ownershipFrom.ownershipEvidence || fresh.ownershipEvidence || { evidence: '', sources: [] },
+    ownershipDetails: Object.fromEntries(OWNERSHIP_DETAIL_KEYS.map((key) => {
+      const oldClaim = cached.ownershipDetails?.[key];
+      const newClaim = fresh.ownershipDetails?.[key];
+      return [key, oldClaim?.status === 'verified' && newClaim?.status !== 'verified' ? oldClaim : newClaim || unknownOwnershipClaim()];
+    })),
+    retrievedAt: fresh.retrievedAt || cached.retrievedAt || ''
   };
 }
 
@@ -318,21 +355,55 @@ async function researchCompany(openai, { contractorName, extraction }) {
   const fieldValue = (key) => cleanText(extraction.fields?.find((field) => field.key === key)?.value, 240);
   const legalName = fieldValue('legal_business_name') || cleanText(extraction.contractorName, 180);
   const homeownerName = companyKey(contractorName) ? cleanText(contractorName, 180) : '';
-  const identity = legalName || homeownerName;
+  const identity = homeownerName || legalName;
   if (!identity) return emptyCompanyResearch('A company name was not found on the estimate, so ownership could not be researched.');
 
   let location = locationOf(fieldValue('business_address'));
   const keys = new Set([companyKey(legalName), companyKey(homeownerName)].filter(Boolean));
 
-  // Fully answered before under one of these names: reuse it so the company always shows the same result.
+  // A completed search, including a result with insufficient evidence, is reusable until its cache expires.
   const known = await bestCachedResearch(keys, location);
-  if (known && isKnownOwnership(known.research) && isKnownOrganization(known.research)) {
+  if (known?.research.retrievedAt) {
     await writeResearchCache(keys, known.research, mergeLocation(location, known.location));
     return known.research;
   }
 
   const fresh = await runCompanyResearch(openai, { identity, legalName, homeownerName, extraction });
   if (fresh.failed) return publicResearch(mergeResearch(known?.research, fresh));
+
+  const acquirer = fresh.ownershipDetails?.acquirerPlatform;
+  if (['verified', 'unverified'].includes(acquirer?.status) && acquirer.value) {
+    const platformResearch = await researchPlatformOwnership(openai, acquirer.value);
+    for (const key of ['currentMajorityOwner', 'priorPeOwner']) {
+      const platformClaim = platformResearch[key];
+      if (platformClaim.status !== 'unable_to_verify') {
+        fresh.ownershipDetails[key] = platformClaim;
+      }
+    }
+  }
+
+  // Verified acquisition details outrank a headline left at "not verified" (they come from the same research).
+  if (!isKnownOwnership(fresh) && acquirer?.status === 'verified' && acquirer.sources?.length) {
+    const owner = fresh.ownershipDetails.currentMajorityOwner;
+    const prior = fresh.ownershipDetails.priorPeOwner;
+    const peLike = prior?.status === 'verified'
+      || (owner?.status === 'verified' && /\b(private equity|capital|alternatives|equity|partners)\b/i.test(`${owner.value} ${owner.evidence}`));
+    fresh.ownershipAccountability = peLike ? 'PE-backed platform' : 'Large corporation owned';
+    fresh.ownershipEvidence = { evidence: acquirer.evidence, sources: acquirer.sources };
+  }
+
+  // A named owner plus searched-and-empty acquirer/PE results supports a self-reported "locally owned" label.
+  const namedOwner = fresh.ownershipDetails?.currentMajorityOwner;
+  if (
+    !isKnownOwnership(fresh)
+    && namedOwner?.status === 'unverified' && namedOwner.sources?.length && namedOwner.evidence
+    && fresh.ownershipDetails.acquirerPlatform?.status === 'none_found'
+    && fresh.ownershipDetails.priorPeOwner?.status === 'none_found'
+  ) {
+    fresh.ownershipAccountability = 'Locally owned and operated';
+    fresh.ownershipEvidence = { evidence: namedOwner.evidence, sources: namedOwner.sources };
+    fresh.explanation = `${fresh.explanation || ''} Self-reported: a named owner was found in company-published material and no acquirer or private-equity owner turned up in public sources; this does not prove who holds the equity.`.trim();
+  }
 
   // Name-only, document-only, and combined inputs all resolve to the same registered legal name,
   // so the result is filed and looked up under that name too.
@@ -348,8 +419,189 @@ async function researchCompany(openai, { contractorName, extraction }) {
   return research;
 }
 
-function publicResearch({ organizationStatus, ownershipAccountability, explanation, sources }) {
-  return { organizationStatus, ownershipAccountability, explanation, sources: sources || [] };
+async function researchPlatformOwnership(openai, platformName) {
+  const empty = {
+    currentMajorityOwner: unknownOwnershipClaim(),
+    priorPeOwner: unknownOwnershipClaim()
+  };
+
+  try {
+    const response = await openai.responses.create({
+      model: config.openaiModel,
+      instructions: `Research the ownership history of this home-services platform, using live web search. Prioritize official company, investor, and transaction-announcement sources.
+
+Return JSON with exactly currentMajorityOwner and priorPeOwner. Each value is an object with exactly value, status, evidence, eventDate, sourceUrls.
+
+currentMajorityOwner is the current controlling/majority owner only if reliable evidence confirms the transaction actually closed and that entity currently owns or controls the platform. If the best evidence only says an investor "will acquire", "agreed to acquire", or that closing is subject to approvals, do NOT report that investor as a confirmed current owner. Instead use status "unverified" and explain in value/evidence that a majority acquisition was announced but the source does not confirm closing.
+
+priorPeOwner is a prior private-equity owner only if reliable evidence directly establishes that the firm owned the platform and that its sale/exit actually closed. An agreement to sell, an announced transaction, or a pending regulatory approval does not establish a completed exit; do not label that firm a prior owner unless another reliable source confirms closing. A lender, advisor, or minority investor alone is not an owner.
+
+For verified findings, evidence must be a short exact quotation directly supporting the claim. Use sourceUrls only from direct web-search citations. Include a date only when the source states it. If evidence is missing, use status "unable_to_verify", empty value/evidence/eventDate, and [] sourceUrls. Do not invent information, dates, or URLs.`,
+      input: `Research the ownership chain for this identified parent/acquirer platform: ${cleanText(platformName, 180)}.
+
+Find the platform's current majority owner and its immediately prior private-equity owner. Search the platform's own releases and the investor/acquirer/seller's official transaction announcements. Return JSON only.`,
+      tools: [{ type: 'web_search', search_context_size: 'high' }],
+      tool_choice: 'required',
+      include: ['web_search_call.action.sources'],
+      max_output_tokens: 3500
+    });
+
+    const json = parseJsonFromText(extractOutputText(response) || response.output_text || '');
+    if (!json) {
+      console.warn('Platform ownership research returned no usable JSON:', { platformName, status: response.status });
+      return empty;
+    }
+
+    const sources = [...collectResearchSources(response).values()];
+    return {
+      currentMajorityOwner: normalizeOwnershipClaim(json.currentMajorityOwner, sources, 'currentMajorityOwner'),
+      priorPeOwner: normalizeOwnershipClaim(json.priorPeOwner, sources, 'priorPeOwner')
+    };
+  } catch (error) {
+    console.error('Platform ownership research failed:', { platformName, error });
+    return empty;
+  }
+}
+
+function normalizeOwnershipClaim(claim, sources, key = '') {
+  const sourceMap = new Map(sources.map((source) => [source.url, source]));
+  const sourceUrls = Array.isArray(claim?.sourceUrls)
+    ? claim.sourceUrls
+    : (Array.isArray(claim?.sources) ? claim.sources.map((source) => source?.url) : []);
+  const linkedSources = [...new Set(sourceUrls)].flatMap((rawUrl) => {
+    let parsed;
+    try {
+      parsed = new URL(rawUrl);
+    } catch {
+      return [];
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol)) return [];
+    const canonical = `${parsed.hostname.replace(/^www\./, '').toLowerCase()}${parsed.pathname.replace(/\/+$/, '')}`;
+    const exactPathMatches = [...sourceMap.entries()].filter(([url]) => {
+      try {
+        const sourceUrl = new URL(url);
+        return `${sourceUrl.hostname.replace(/^www\./, '').toLowerCase()}${sourceUrl.pathname.replace(/\/+$/, '')}` === canonical;
+      } catch {
+        return false;
+      }
+    });
+    if (exactPathMatches.length) return exactPathMatches.map(([, source]) => source);
+    const sameHost = sources.filter((source) => {
+      try {
+        return new URL(source.url).hostname.replace(/^www\./, '').toLowerCase() === parsed.hostname.replace(/^www\./, '').toLowerCase();
+      } catch {
+        return false;
+      }
+    });
+    return sameHost.length === 1 ? sameHost : [];
+  });
+  const status = ['verified', 'unverified', 'none_found', 'unable_to_verify'].includes(claim?.status) ? claim.status : 'unable_to_verify';
+  const evidence = cleanText(claim?.evidence, 500);
+  const value = cleanText(claim?.value, 240);
+
+  // A searched-and-empty result is only meaningful for "is there an acquirer / prior PE owner"; it is not proof.
+  if (status === 'none_found' && ['acquirerPlatform', 'priorPeOwner'].includes(key)) {
+    return {
+      value: 'None found in public sources',
+      status,
+      evidence: evidence || 'Searches found no acquirer or private-equity owner. This is not proof that none exists.',
+      eventDate: '',
+      sources: []
+    };
+  }
+
+  if (status === 'unable_to_verify' || !value) {
+    return unknownOwnershipClaim();
+  }
+
+  // A finding without a quote or a matching search citation is still shown, but never as verified.
+  const finalStatus = status === 'verified' && (!evidence || !linkedSources.length) ? 'unverified' : status;
+
+  let normalizedValue = value;
+  let eventDate = cleanText(claim?.eventDate, 80);
+  if (key === 'localBrand') {
+    const became = /\b(?:in\s+(\d{4})[, ]+)?(.+?)\s+(?:officially\s+)?became\s+(.+?)(?:[.!]|$)/i.exec(evidence);
+    const knownAs = /\b(?:you might know us as|formerly known as|formerly called|previously known as)\s+["“]?([^.”",]+)["”]?/i.exec(evidence);
+    const formerName = cleanText(became?.[2] || knownAs?.[1], 160);
+    if (formerName && !normalizedValue.toLowerCase().includes('formerly')) {
+      normalizedValue = `${normalizedValue} (formerly ${formerName})`;
+    }
+    if (!eventDate && became?.[1]) eventDate = became[1];
+  }
+
+  return {
+    value: finalStatus === 'unverified' && !/^unverified:/i.test(normalizedValue) ? `Unverified: ${normalizedValue}` : normalizedValue,
+    status: finalStatus,
+    evidence,
+    eventDate,
+    sources: linkedSources
+  };
+}
+
+function normalizeOwnershipDetails(details, sources) {
+  return Object.fromEntries(OWNERSHIP_DETAIL_KEYS.map((key) => [key, normalizeOwnershipClaim(details?.[key], sources, key)]));
+}
+
+function normalizeClassificationEvidence(evidence, sources) {
+  const linkedSources = normalizeOwnershipClaim({
+    value: evidence?.evidence,
+    status: 'verified',
+    evidence: evidence?.evidence,
+    sourceUrls: evidence?.sourceUrls || evidence?.sources?.map((source) => source?.url)
+  }, sources).sources;
+  const quote = cleanText(evidence?.evidence, 500);
+  if (!quote || !linkedSources.length) return { evidence: '', sources: [] };
+  const selfReportedLinkedInType = /\bprivately held\b/i.test(quote) && linkedSources.some((source) => {
+    try {
+      const url = new URL(source.url);
+      return (url.hostname.toLowerCase() === 'linkedin.com' || url.hostname.toLowerCase().endsWith('.linkedin.com'))
+        && /\/company\//i.test(url.pathname);
+    } catch {
+      return false;
+    }
+  });
+  return {
+    evidence: quote,
+    sources: linkedSources,
+    qualification: selfReportedLinkedInType ? 'Self-reported company profile; this does not establish a majority owner.' : ''
+  };
+}
+
+function hasClassificationSupport(status, evidence, sources = []) {
+  const text = String(evidence || '').toLowerCase();
+  if (status === 'Publicly traded company') return /\b(nasdaq|nyse|new york stock exchange|stock exchange|publicly traded|traded on)\b/.test(text);
+  if (status === 'Private organization') {
+    return /\b(privately held|privately owned|private company|private business)\b/.test(text) && sources.length > 0;
+  }
+  if (status === 'Public organization') return /\b(municipal|government|public authority|public agency|publicly owned)\b/.test(text);
+  if (status === 'Locally owned and operated') return /\b(locally owned|family[- ]owned|independently owned|family business)\b/.test(text);
+  if (status === 'Large corporation owned') return /\b(owned by|acquired by|subsidiary of|portfolio company|private equity|franchisee of|parent company)\b/.test(text);
+  if (status === 'PE-backed platform') return /\b(private equity|majority stake|majority investment|portfolio company|backed by|capital partners|alternatives|equity partners|acquired by)\b/.test(text);
+  if (status === 'Franchise') return /\bfranchis\w*\b/.test(text);
+  if (status === 'Publicly traded (shareholder-owned)') return /\b(nasdaq|nyse|new york stock exchange|stock exchange|publicly traded|traded on)\b/.test(text);
+  return false;
+}
+
+function publicResearch(research = {}) {
+  const sources = Array.isArray(research.sources) ? research.sources : [];
+  const ownershipSources = [
+    ...OWNERSHIP_DETAIL_KEYS.flatMap((key) => research.ownershipDetails?.[key]?.sources || []),
+    ...(research.organizationEvidence?.sources || []),
+    ...(research.ownershipEvidence?.sources || [])
+  ];
+  const sourcePool = [...new Map([...sources, ...ownershipSources].map((source) => [source.url, source])).values()];
+  return {
+    organizationStatus: research.organizationStatus || 'Unable to verify',
+    ownershipAccountability: research.ownershipAccountability || 'Ownership not verified',
+    explanation: research.explanation || 'Web search did not find enough information about this company to confirm its ownership.',
+    sources,
+    matchedLegalName: research.matchedLegalName || '',
+    matchedAddress: research.matchedAddress || '',
+    organizationEvidence: normalizeClassificationEvidence(research.organizationEvidence, sourcePool),
+    ownershipEvidence: normalizeClassificationEvidence(research.ownershipEvidence, sourcePool),
+    ownershipDetails: normalizeOwnershipDetails(research.ownershipDetails, sourcePool),
+    retrievedAt: research.retrievedAt || ''
+  };
 }
 
 function mergeLocation(a = {}, b = {}) {
@@ -366,9 +618,6 @@ async function bestCachedResearch(keys, location) {
 }
 
 async function runCompanyResearch(openai, { identity, legalName, homeownerName, extraction }) {
-  // A registered business form in either name is evidence of a private business on its own.
-  const entityName = [legalName, homeownerName].find((name) => BUSINESS_ENTITY_RE.test(name)) || '';
-  const documentShowsPrivateEntity = Boolean(entityName);
   const documentLines = documentIdentityLines(extraction);
 
   try {
@@ -381,9 +630,9 @@ async function runCompanyResearch(openai, { identity, legalName, homeownerName, 
         documentLines.length
           ? `Identity details written in the uploaded estimate:\n${documentLines.join('\n')}`
           : 'The uploaded estimate states no identity details beyond the company name.',
-        'Search the web for this company, then return JSON only with exactly these keys: organizationStatus, ownershipAccountability, explanation, matchedLegalName, matchedAddress.'
+        `Search the web for this exact company. Run separate searches for the company name with "owner", "founder", "president", and "about us", and read its own About page and its press releases (press-release sites often name the owner or founder in a quote or byline). Search for its LinkedIn company page explicitly (for example "site:linkedin.com/company" plus the company name and its city or state, and also the name alone), open it, and read the About section's Type field, then check that the page's headquarters or website matches the company. Check a matching LinkedIn company page's Type field for self-reported company status, while keeping that distinct from evidence of specific equity owners. For brand identity/history, search the company name with "formerly", "previously known as", and "officially became"; prefer its official About/rename page. For acquisitions, search the company name with "acquired by" and the named parent/platform. For sponsor ownership, also search the identified platform with "majority stake", "private equity", "sale", "seller", and "transaction closed". Do not stop at the local brand's acquirer; follow its ownership chain one level upstream. A founder or spokesperson citation does not establish majority ownership, and not appearing in a PE rollup is not proof of no PE history. Return JSON only with exactly these keys: organizationStatus, organizationEvidence, ownershipAccountability, ownershipEvidence, explanation, matchedLegalName, matchedAddress, ownershipDetails.`
       ].filter(Boolean).join('\n\n'),
-      tools: [{ type: 'web_search', search_context_size: 'medium' }],
+      tools: [{ type: 'web_search', search_context_size: 'high' }],
       tool_choice: 'required',
       include: ['web_search_call.action.sources'],
       // Reasoning models spend part of this budget thinking; too small a limit returns no text at all.
@@ -392,45 +641,50 @@ async function runCompanyResearch(openai, { identity, legalName, homeownerName, 
 
     const rawText = extractOutputText(response) || response.output_text || '';
     const json = parseCompanyResearchJson(rawText) || parseJsonFromText(rawText);
-    const sources = [...collectResearchSources(response).values()].slice(0, 5);
+    const sources = [...collectResearchSources(response).values()];
 
     if (!json) {
       console.warn('Contractor web research returned no usable JSON:', { identity, status: response.status, incomplete: response.incomplete_details });
     }
 
-    let organizationStatus = ORGANIZATION_VALUES.includes(json?.organizationStatus) ? json.organizationStatus : 'Unable to verify';
-    let ownershipAccountability = OWNERSHIP_VALUES.includes(json?.ownershipAccountability) ? json.ownershipAccountability : 'Ownership not verified';
+    let organizationEvidence = normalizeClassificationEvidence(json?.organizationEvidence, sources);
+    let ownershipEvidence = normalizeClassificationEvidence(json?.ownershipEvidence, sources);
+    let organizationStatus = ORGANIZATION_VALUES.includes(json?.organizationStatus)
+      && organizationEvidence.sources.length
+      && hasClassificationSupport(json.organizationStatus, organizationEvidence.evidence, organizationEvidence.sources)
+      ? json.organizationStatus
+      : 'Unable to verify';
+    let ownershipAccountability = OWNERSHIP_VALUES.includes(json?.ownershipAccountability)
+      && ownershipEvidence.sources.length
+      && hasClassificationSupport(json.ownershipAccountability, ownershipEvidence.evidence, ownershipEvidence.sources)
+      ? json.ownershipAccountability
+      : 'Ownership not verified';
+    if (organizationStatus === 'Publicly traded company' && hasClassificationSupport(organizationStatus, organizationEvidence.evidence, organizationEvidence.sources)) {
+      ownershipAccountability = 'Publicly traded (shareholder-owned)';
+      ownershipEvidence = organizationEvidence;
+    }
     let explanation = cleanText(json?.explanation, 700);
+    if (organizationStatus === 'Unable to verify') organizationEvidence = { evidence: '', sources: [] };
+    if (ownershipAccountability === 'Ownership not verified') ownershipEvidence = { evidence: '', sources: [] };
 
-    // A publicly traded company is owned by stock-market shareholders, never by local owners.
-    if (organizationStatus === 'Publicly traded company' && ownershipAccountability !== 'Large corporation owned') {
-      ownershipAccountability = 'Large corporation owned';
-      explanation = `${explanation ? `${explanation} ` : ''}As a publicly traded company, it is owned by its stock-market shareholders and is classed as large corporation owned.`;
-    }
-
-    if (organizationStatus === 'Unable to verify' && documentShowsPrivateEntity) {
-      organizationStatus = 'Private organization';
-      explanation = `${explanation ? `${explanation} ` : ''}The company name "${entityName}" is a registered business entity, which identifies a privately operated business.`;
-    }
-
+    const ownershipDetails = normalizeOwnershipDetails(json?.ownershipDetails, sources);
     return {
       organizationStatus,
       ownershipAccountability,
       explanation: explanation || 'Web search did not find enough information about this company to confirm its ownership.',
       sources,
+      organizationEvidence,
+      ownershipEvidence,
       matchedLegalName: cleanText(json?.matchedLegalName, 180),
       matchedAddress: cleanText(json?.matchedAddress, 240),
+      ownershipDetails,
+      retrievedAt: new Date().toISOString(),
       // Unparseable replies are not remembered, so the next run gets a fresh attempt.
       failed: !json
     };
   } catch (error) {
     console.error('Contractor web research failed:', error);
-    const fallback = { ...emptyCompanyResearch('Web research was unavailable; ownership was not verified.'), failed: true };
-    if (documentShowsPrivateEntity) {
-      fallback.organizationStatus = 'Private organization';
-      fallback.explanation += ` The company name "${entityName}" is a registered business entity.`;
-    }
-    return fallback;
+    return { ...emptyCompanyResearch('Web research was unavailable; ownership was not verified.'), failed: true };
   }
 }
 

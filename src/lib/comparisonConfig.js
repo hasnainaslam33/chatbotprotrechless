@@ -769,6 +769,9 @@ export const acceptedUploadTypes = '.pdf,.jpg,.jpeg,.png,.doc,.docx,.txt';
 
 export const MAX_ESTIMATES = 3;
 
+// Ownership labels that should be flagged to the homeowner as non-local control.
+export const CORPORATE_OWNERSHIP = ['Large corporation owned', 'PE-backed platform', 'Franchise'];
+
 /* ------------------------------------------------------------------ */
 /* Contractor summary labels                                           */
 /* ------------------------------------------------------------------ */

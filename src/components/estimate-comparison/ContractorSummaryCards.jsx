@@ -1,4 +1,5 @@
 import { warrantySummary } from '../../lib/comparisonScoring.js';
+import { CORPORATE_OWNERSHIP } from '../../lib/comparisonConfig.js';
 
 function formatPrice(value) {
   if (!Number.isFinite(value) || value <= 0) return 'Not stated';
@@ -48,7 +49,7 @@ function deriveMainResult(contractor = {}) {
 
 function ownershipStatus(contractor = {}) {
   const value = contractor.companyResearch?.ownershipAccountability || 'Ownership not verified';
-  if (value === 'Large corporation owned') return { className: 'is-corporate', icon: '⚠', label: value };
+  if (CORPORATE_OWNERSHIP.includes(value)) return { className: 'is-corporate', icon: '⚠', label: value };
   if (value === 'Locally owned and operated') return { className: 'is-local', icon: '✓', label: value };
   return { className: 'is-unknown', icon: '?', label: value };
 }

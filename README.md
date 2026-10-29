@@ -50,6 +50,23 @@ Open the site:
 http://localhost:3000
 ```
 
+For frontend hot reload with Vite, run the backend and UI in separate terminals:
+
+Terminal 1:
+
+```cmd
+npm run dev
+```
+
+Terminal 2:
+
+```cmd
+npm run dev:ui
+```
+
+Then open `http://localhost:5173`. The Vite `/api` proxy forwards requests to the
+backend at `127.0.0.1:3000`; keep the backend terminal running while using the UI.
+
 Open the admin dashboard:
 
 ```text

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { MAX_ESTIMATES, projectBasicsDefaults, UPLOAD_STATE } from '../../lib/comparisonConfig.js';
-import { assignLabels, buildContractor, buildContractorQuestions, buildFallbackSummary, buildKeyQuestionMatrix, topRisks } from '../../lib/comparisonScoring.js';
+import { normalizeAnalysis } from '../../lib/normalizeAnalysis.js';
 import AnalysisLoadingState from './AnalysisLoadingState.jsx';
 import EstimateUploadStep from './EstimateUploadStep.jsx';
 import IntakeStepper from './IntakeStepper.jsx';
@@ -273,33 +273,4 @@ function friendlyUploadError(serverError = '', status = 0) {
   if (/File too large|LIMIT_FILE_SIZE/i.test(raw)) return 'That file is too large. Please upload a smaller PDF or image.';
   if (status === 403) return 'File uploads are currently unavailable. You can paste the estimate text instead.';
   return raw || "We couldn't upload this file. Please try again.";
-}
-
-/**
- * The server already returns fully-scored contractors using the same shared
- * modules the UI imports. This rebuilds anything missing so the dashboard can
- * never receive a half-shaped payload — e.g. if an older server is deployed.
- */
-function normalizeAnalysis(data = {}) {
-  const hasScores = Array.isArray(data.contractors) && data.contractors.every((contractor) => Array.isArray(contractor.groupScores));
-
-  const contractors = hasScores
-    ? data.contractors
-    : assignLabels((data.contractors || []).map((contractor, index) => buildContractor(contractor, index)));
-
-  return {
-    contractors,
-    customer: data.customer || {},
-    reportId: data.reportId || '',
-    reportDate: data.reportDate || data.analyzedAt || '',
-    risks: Array.isArray(data.risks) && data.risks.length ? data.risks : topRisks(contractors, [], 5),
-    keyQuestions: Array.isArray(data.keyQuestions) && data.keyQuestions.length ? data.keyQuestions : buildKeyQuestionMatrix(contractors),
-    contractorQuestions:
-      Array.isArray(data.contractorQuestions) && data.contractorQuestions.length
-        ? data.contractorQuestions
-        : buildContractorQuestions(contractors),
-    summary: data.summary || buildFallbackSummary(contractors),
-    disclaimer: data.disclaimer || '',
-    mode: data.mode || ''
-  };
 }

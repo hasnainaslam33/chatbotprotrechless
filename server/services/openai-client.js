@@ -242,12 +242,76 @@ export async function buildMultimodalContent({ textInput, uploadedFiles }) {
   return { content, imageCount, fileCount, notes };
 }
 
+let githubClient = null;
+
+function getGithubClient() {
+  if (!config.githubToken) return null;
+  if (!githubClient) githubClient = new OpenAI({ apiKey: config.githubToken, baseURL: config.githubModelsBaseUrl });
+  return githubClient;
+}
+
+// GitHub Models only offers chat completions, so images are sent as image_url and documents are skipped.
+async function createGithubAnswer({ instructions, textInput, uploadedFiles, fallback }) {
+  const github = getGithubClient();
+  if (!github) {
+    return { mode: 'fallback', answer: fallback(), model: 'local-fallback' };
+  }
+
+  const { content } = await buildMultimodalContent({ textInput, uploadedFiles });
+  const parts = content
+    .map((part) => {
+      if (part.type === 'input_text') return { type: 'text', text: part.text };
+      if (part.type === 'input_image') return { type: 'image_url', image_url: { url: part.image_url, detail: part.detail } };
+      return null;
+    })
+    .filter(Boolean);
+  const imageCount = parts.filter((part) => part.type === 'image_url').length;
+
+  try {
+    const response = await github.chat.completions.create({
+      model: config.githubModel,
+      temperature: config.aiTemperature,
+      messages: [
+        { role: 'system', content: instructions },
+        { role: 'user', content: parts }
+      ]
+    });
+    const answer = response.choices?.[0]?.message?.content?.trim() || fallback();
+    return {
+      mode: imageCount ? 'github-multimodal' : 'github',
+      answer,
+      structuredAnswer: parseStructuredAnswer(answer),
+      model: config.githubModel,
+      responseId: response.id || null
+    };
+  } catch (error) {
+    console.error('GitHub Models request failed:', error);
+    return {
+      mode: 'github-error-fallback',
+      answer: `${fallback()}\n\nAI provider error: ${error.message}. Check that GITHUB_MODELS_TOKEN has the models:read permission and that GITHUB_MODEL is available to your account.`,
+      model: config.githubModel
+    };
+  }
+}
+
 export async function createAiAnswer({ module, userType, messages = [], formContext = {}, uploadedFileIds = [] }) {
   const latest = messages[messages.length - 1]?.content || '';
   const uploadedFiles = [];
   for (const id of uploadedFileIds.slice(0, 20)) {
     const upload = await findUpload(cleanText(id, 100));
     if (upload) uploadedFiles.push(upload);
+  }
+
+  const instructions = buildSystemPrompt({ module, userType });
+  const textInput = buildUserInput({ messages, formContext, uploadedFiles });
+
+  if (config.aiProvider === 'github') {
+    return createGithubAnswer({
+      instructions,
+      textInput,
+      uploadedFiles,
+      fallback: () => fallbackAnswer({ module, message: latest, userType, formContext })
+    });
   }
 
   const openai = getClient();
@@ -259,8 +323,6 @@ export async function createAiAnswer({ module, userType, messages = [], formCont
     };
   }
 
-  const instructions = buildSystemPrompt({ module, userType });
-  const textInput = buildUserInput({ messages, formContext, uploadedFiles });
   const { content, imageCount, fileCount } = await buildMultimodalContent({ textInput, uploadedFiles });
 
   try {

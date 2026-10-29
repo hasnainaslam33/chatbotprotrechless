@@ -110,6 +110,8 @@ function normalizeOwnershipValue(value) {
   if (/\bownership not verified\b/.test(text)) return 'Ownership not verified';
   if (/\blocally owned and operated\b/.test(text)) return 'Locally owned and operated';
   if (/\blarge corporation owned\b/.test(text)) return 'Large corporation owned';
+  if (/\bpe-backed platform\b/.test(text)) return 'PE-backed platform';
+  if (/\bfranchise\b/.test(text)) return 'Franchise';
   return '';
 }
 

@@ -9,7 +9,7 @@ const navLinks = [
 
 export default function Navbar() {
   return (
-    <nav className="nav-links" aria-label="Primary navigation">
+    <nav className="nav-links" id="primary-navigation" aria-label="Primary navigation">
       {navLinks.map((link) => (
         <NavLink
           key={link.to}

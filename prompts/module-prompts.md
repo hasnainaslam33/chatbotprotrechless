@@ -105,7 +105,28 @@ Output:
 - The 12 homeowner questions answered per contractor
 - Warranty, price, repair-option, and full side-by-side comparisons with the
   source wording behind every status
+- Ownership research in each contractor card: local brand, acquirer/platform,
+  current majority owner, and prior PE owner. Each ownership claim must link to
+  a matching web-search citation; unsupported fields display "Unable to verify".
 - A homeowner-friendly summary that never says "you should hire Contractor X"
+
+Ownership research must distinguish direct evidence from unverified possibilities.
+Do not treat an LLC/Inc. suffix, shared address, officer, manager, or registered
+agent as proof of equity ownership. Only show event dates explicitly supported by
+the cited source; never infer an acquisition or ownership relationship. A
+verified ownership or organization classification requires a direct quotation and
+a link to a matching search citation. State business registry entries prove
+registration only, not private ownership. A public listing alone does not prove
+that any one investor is a majority owner. When a local brand is reported as
+acquired by a platform, research the platform's own ownership chain separately;
+do not stop at the local acquirer. Keep a proposed/announced transaction
+unverified as a current ownership fact unless a source confirms it closed.
+A matching LinkedIn company page's "Privately Held" Type field may support a
+clearly attributed, self-reported private-organization status, but it does not
+identify equity owners, establish majority control, or prove that a company is
+independently owned. A founder title or family-trade-history statement is not
+proof of current share ownership. Likewise, not appearing in a PE/industry
+rollup is not proof of no PE history.
 
 ## 5. Repair Option Explainer
 Explain in plain English:

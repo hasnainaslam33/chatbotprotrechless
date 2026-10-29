@@ -43,6 +43,11 @@ export const config = {
   openaiApiKey: process.env.OPENAI_API_KEY || '',
   openaiApiKeyMasked: maskSecret(process.env.OPENAI_API_KEY || ''),
   openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+  // "openai" (default) or "github" (GitHub Models, the API behind GitHub Copilot's models).
+  aiProvider: (process.env.AI_PROVIDER || 'openai').toLowerCase(),
+  githubToken: process.env.GITHUB_MODELS_TOKEN || '',
+  githubModel: process.env.GITHUB_MODEL || 'openai/gpt-4o-mini',
+  githubModelsBaseUrl: process.env.GITHUB_MODELS_BASE_URL || 'https://models.github.ai/inference',
   aiTemperature: Number(process.env.AI_TEMPERATURE || 0.25),
   maxUploadMb: intEnv('MAX_UPLOAD_MB', 75),
   maxVisionImages: intEnv('MAX_VISION_IMAGES', 8),
