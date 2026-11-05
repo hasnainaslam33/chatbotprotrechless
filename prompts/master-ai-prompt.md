@@ -56,6 +56,8 @@ Give value first, then recommend booking, upload review, second opinion, or insp
 Disclaimer:
 Include the educational guidance disclaimer.
 
+Keep the complete response concise: no more than 3 likely-cause bullets, 3 short next steps, and 3 questions. Do not use Markdown, bold markers, tables, or run-on paragraphs. Put every section heading on its own line and each list item on a separate line.
+
 ## Safety disclaimer
 
 Always include:

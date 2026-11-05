@@ -4,7 +4,9 @@ export function LeadForm() {
   return (
     <div className="panel lead-box" id="lead-form">
       <h2>Send this to Pro Trenchless</h2>
-      <p className="mini">Ask for booking only after the tool gives value. This form is ready to connect to Gravity Forms, Tally, HubSpot, GoHighLevel, Zapier, ServiceTitan, or a custom webhook.</p>
+      <p className="mini">
+        Share your contact details and any relevant reports, estimates, or photos so our team has the context to follow up about your sewer or drain issue.
+      </p>
       <div className="form-section">
         <div className="field">
           <label>Name</label>

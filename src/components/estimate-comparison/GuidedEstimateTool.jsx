@@ -18,6 +18,10 @@ const STEPS = [
 
 const PHASE = { INTAKE: 'intake', ANALYZING: 'analyzing', RESULTS: 'results' };
 
+function createSubmissionId() {
+  return globalThis.crypto?.randomUUID?.() || `intake-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 function emptyEstimate(index) {
   return {
     id: `estimate-${index + 1}`,
@@ -45,7 +49,9 @@ export default function GuidedEstimateTool({ page }) {
   const [estimates, setEstimates] = useState(() => Array.from({ length: MAX_ESTIMATES }, (_, index) => emptyEstimate(index)));
   const [analysis, setAnalysis] = useState(null);
   const [formError, setFormError] = useState('');
+  const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   const resultsRef = useRef(null);
+  const submissionIdRef = useRef('');
 
   const isUploading = estimates.some((estimate) => estimate.state === UPLOAD_STATE.UPLOADING);
 
@@ -59,7 +65,57 @@ export default function GuidedEstimateTool({ page }) {
   }
 
   function handleBasicsChange(name, value) {
+    submissionIdRef.current = '';
     setBasics((current) => ({ ...current, [name]: value }));
+  }
+
+  async function handleContinueToUploads() {
+    const customerError = validateCustomerProfile(basics);
+    if (customerError) {
+      setFormError(customerError);
+      return;
+    }
+
+    setFormError('');
+    setIsSavingCustomer(true);
+    submissionIdRef.current ||= createSubmissionId();
+
+    try {
+      const response = await fetch('/api/estimate-comparison/intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId: submissionIdRef.current,
+          customer: {
+            customerName: basics.customerName,
+            streetAddress: basics.streetAddress,
+            city: basics.city,
+            state: basics.state,
+            zipCode: basics.zipCode
+          }
+        })
+      });
+
+      const text = await response.text();
+      let data = {};
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error('The customer details could not be saved. Please try again.');
+        }
+      }
+
+      if (!response.ok || data.ok !== true) {
+        throw new Error(data.error || 'The customer details could not be saved. Please try again.');
+      }
+
+      setStep(1);
+    } catch (error) {
+      setFormError(error.message || 'The customer details could not be saved. Please try again.');
+    } finally {
+      setIsSavingCustomer(false);
+    }
   }
 
   function handleEstimateFieldChange(index, name, value) {
@@ -199,6 +255,7 @@ export default function GuidedEstimateTool({ page }) {
     setEstimates(Array.from({ length: MAX_ESTIMATES }, (_, index) => emptyEstimate(index)));
     setBasics(projectBasicsDefaults);
     setFormError('');
+    submissionIdRef.current = '';
     setStep(0);
     setPhase(PHASE.INTAKE);
   }
@@ -216,7 +273,13 @@ export default function GuidedEstimateTool({ page }) {
       <IntakeStepper steps={STEPS} currentStep={step} onStepSelect={(index) => (phase === PHASE.INTAKE ? setStep(index) : undefined)} />
 
       {phase === PHASE.INTAKE && step === 0 ? (
-        <ProjectBasicsStep values={basics} onChange={handleBasicsChange} onNext={() => setStep(1)} formError={formError} />
+        <ProjectBasicsStep
+          values={basics}
+          onChange={handleBasicsChange}
+          onNext={handleContinueToUploads}
+          formError={formError}
+          isSaving={isSavingCustomer}
+        />
       ) : null}
 
       {phase === PHASE.INTAKE && step === 1 ? (

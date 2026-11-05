@@ -8,6 +8,7 @@ import { extractEstimate, synthesizeComparison } from '../services/estimate-extr
 import { appendJsonl, readJsonl } from '../services/storage.js';
 import { getSettings, isModuleEnabled } from '../services/settings.js';
 import { cleanText } from '../utils/safe.js';
+import { saveEstimateIntake } from '../services/google-sheets.js';
 import { DISCLAIMER, MAX_ESTIMATES } from '../../src/lib/comparisonConfig.js';
 import {
   assignLabels,
@@ -31,6 +32,25 @@ const comparisonLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'You have run several comparisons in a short time. Please wait a few minutes and try again.' }
+});
+
+const intakeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many form submissions. Please wait a few minutes and try again.' }
+});
+
+const intakeSchema = z.object({
+  submissionId: z.string().trim().min(1).max(100),
+  customer: z.object({
+    customerName: z.string().trim().min(1).max(160),
+    streetAddress: z.string().trim().min(1).max(220),
+    city: z.string().trim().min(1).max(120),
+    state: z.string().trim().min(1).max(80),
+    zipCode: z.string().trim().regex(/^\d{5}(?:-\d{4})?$/)
+  })
 });
 
 const schema = z.object({
@@ -64,6 +84,26 @@ const schema = z.object({
     )
     .min(1)
     .max(MAX_ESTIMATES)
+});
+
+router.post('/intake', intakeLimiter, async (req, res) => {
+  try {
+    const payload = intakeSchema.parse(req.body || {});
+    const result = await saveEstimateIntake(payload);
+    res.json({ ok: true, duplicate: result.duplicate });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Please enter a valid customer name and service address.' });
+    }
+
+    console.error('Unable to save estimate-review intake to Google Sheets:', error);
+    const notConfigured = /not configured/i.test(error.message);
+    res.status(notConfigured ? 503 : 502).json({
+      error: notConfigured
+        ? 'Saving customer details is not configured yet. Please try again later.'
+        : 'We could not save your customer details. Please try again.'
+    });
+  }
 });
 
 function parsePrice(value) {

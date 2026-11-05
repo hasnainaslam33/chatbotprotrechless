@@ -2,6 +2,8 @@ const tokenKey = 'pt_admin_token';
 const token = () => localStorage.getItem(tokenKey) || '';
 let currentSettings = null;
 let currentUploads = [];
+let googleSheetsStatus = null;
+let spreadsheetNextPageToken = '';
 
 function $(id){ return document.getElementById(id); }
 function esc(value){ return String(value || '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char])); }
@@ -75,11 +77,183 @@ async function loadAdmin(){
     renderLeads(leads.leads || []);
     renderUploads(currentUploads);
     renderSettings(currentSettings);
+    googleSheetsStatus = await adminFetch('/api/admin/google-sheets/status');
+    renderGoogleSheets(googleSheetsStatus);
     setStatus('Dashboard loaded.', true);
+    showGoogleOAuthNotice();
   }catch(error){
     setStatus(error.message, false);
     if(/Unauthorized/i.test(error.message)) logout();
   }
+}
+
+function renderGoogleSheets(status){
+    if(!status) return;
+    const statusEl=$('google-sheets-connection-status');
+    $('google-sheets-redirect-uri').textContent=status.redirectUri || '';
+    $('google-sheets-connect-btn').disabled=!status.oauthConfigured;
+    $('google-sheets-connect-btn').textContent=status.connected?'Reconnect Google Drive':'Connect Google Drive';
+    $('google-sheets-disconnect-btn').classList.toggle('hidden', !status.connected && !status.connectionError);
+    $('google-sheets-disconnect-btn').textContent=status.connectionError?'Reset saved connection':'Disconnect';
+    $('google-sheets-selector').classList.toggle('hidden', !status.connected);
+
+    if(status.connectionError){
+      statusEl.textContent=`${status.connectionError} Use Reset saved connection, then connect again.`;
+      statusEl.className='admin-status err';
+    }else if(!status.oauthConfigured){
+      statusEl.textContent='Google OAuth needs server configuration before an account can be connected.';
+      statusEl.className='admin-status err';
+    }else if(status.connected){
+      statusEl.textContent=`Connected to ${status.accountEmail || 'Google Drive'}.`;
+      statusEl.className='admin-status ok';
+    }else{
+      statusEl.textContent='No Google account is connected.';
+      statusEl.className='admin-status';
+    }
+
+    const selection=status.selection;
+    $('google-sheets-selection-status').textContent=selection
+      ? `Current destination: ${selection.spreadsheetName} — ${selection.sheetTitle}`
+      : 'No spreadsheet destination selected yet.';
+    $('google-sheets-selection-status').className=`admin-status ${selection?'ok':''}`;
+
+    if(status.connected){
+      const search=$('google-sheets-search');
+      if(selection && !search.value) search.value=selection.spreadsheetName;
+      findGoogleSpreadsheets(false, true).catch(error=>setGoogleSheetsMessage(error.message, false));
+    }
+  }
+
+function setGoogleSheetsMessage(message, ok=true){
+    const status=$('google-sheets-selection-status');
+    status.textContent=message;
+    status.className=`admin-status ${ok?'ok':'err'}`;
+  }
+
+function showGoogleOAuthNotice(){
+    const params=new URLSearchParams(location.search);
+    const result=params.get('googleSheets');
+    if(!result) return;
+    document.querySelector('.tab-btn[data-tab="settings"]').click();
+    setGoogleSheetsMessage(
+      result==='connected'?'Google Drive connected. Choose a spreadsheet and tab.':'Google Drive could not be connected. Check the OAuth setup and try again.',
+      result==='connected'
+    );
+    params.delete('googleSheets');
+    const query=params.toString();
+    history.replaceState(null, '', `${location.pathname}${query?`?${query}`:''}${location.hash}`);
+  }
+
+async function findGoogleSpreadsheets(append=false, quiet=false){
+    const select=$('google-sheets-spreadsheet');
+    const query=$('google-sheets-search').value.trim();
+    const pageToken=append?spreadsheetNextPageToken:'';
+    if(!append){
+      spreadsheetNextPageToken='';
+      select.innerHTML='<option value="">Loading spreadsheets...</option>';
+      select.disabled=true;
+    }
+    $('google-sheets-find-btn').disabled=true;
+    $('google-sheets-more-btn').disabled=true;
+    try{
+      const params=new URLSearchParams();
+      if(query) params.set('q', query);
+      if(pageToken) params.set('pageToken', pageToken);
+      const result=await adminFetch(`/api/admin/google-sheets/spreadsheets?${params}`);
+      const files=result.spreadsheets||[];
+      if(!append) select.innerHTML='<option value="">Select a spreadsheet</option>';
+      files.forEach(file=>{
+        if([...select.options].some(option=>option.value===file.id)) return;
+        const option=document.createElement('option');
+        option.value=file.id;
+        option.textContent=file.name;
+        select.append(option);
+      });
+      spreadsheetNextPageToken=result.nextPageToken||'';
+      $('google-sheets-more-btn').classList.toggle('hidden', !spreadsheetNextPageToken);
+      select.disabled=false;
+
+      const selectedId=googleSheetsStatus?.selection?.spreadsheetId;
+      if(!append && selectedId && [...select.options].some(option=>option.value===selectedId)){
+        select.value=selectedId;
+        await loadGoogleTabs(selectedId);
+      }else if(!files.length && !append){
+        select.innerHTML='<option value="">No spreadsheets found</option>';
+        select.disabled=false;
+      }
+      if(!quiet) setGoogleSheetsMessage(files.length?'Select the destination spreadsheet and tab.':'No spreadsheets found for that search.', Boolean(files.length));
+    }catch(error){
+      if(!append) select.innerHTML='<option value="">Unable to load spreadsheets</option>';
+      setGoogleSheetsMessage(error.message, false);
+    }finally{
+      $('google-sheets-find-btn').disabled=false;
+      $('google-sheets-more-btn').disabled=false;
+    }
+  }
+
+async function loadGoogleTabs(spreadsheetId){
+    const tabSelect=$('google-sheets-tab');
+    const saveButton=$('google-sheets-save-btn');
+    tabSelect.disabled=true;
+    saveButton.disabled=true;
+    tabSelect.innerHTML='<option value="">Loading tabs...</option>';
+    if(!spreadsheetId){
+      tabSelect.innerHTML='<option value="">Select a spreadsheet first</option>';
+      return;
+    }
+    try{
+      const result=await adminFetch(`/api/admin/google-sheets/spreadsheets/${encodeURIComponent(spreadsheetId)}/tabs`);
+      tabSelect.innerHTML='<option value="">Select a tab</option>';
+      result.tabs.forEach(tab=>{
+        const option=document.createElement('option');
+        option.value=tab.id;
+        option.textContent=tab.title;
+        tabSelect.append(option);
+      });
+      if(googleSheetsStatus?.selection?.spreadsheetId===spreadsheetId){
+        tabSelect.value=String(googleSheetsStatus.selection.sheetId);
+      }
+      tabSelect.disabled=false;
+      saveButton.disabled=!tabSelect.value;
+      if(!result.tabs.length) tabSelect.innerHTML='<option value="">No tabs found</option>';
+    }catch(error){
+      tabSelect.innerHTML='<option value="">Unable to load tabs</option>';
+      setGoogleSheetsMessage(error.message, false);
+    }
+  }
+
+async function connectGoogleDrive(){
+    try{
+      const result=await adminFetch('/api/admin/google-sheets/oauth-url');
+      location.assign(result.url);
+    }catch(error){ setGoogleSheetsMessage(error.message, false); }
+  }
+
+async function saveGoogleSheetsSelection(){
+    try{
+      $('google-sheets-save-btn').disabled=true;
+      setGoogleSheetsMessage('Saving spreadsheet destination...');
+      const result=await adminFetch('/api/admin/google-sheets/selection',{
+        method:'PUT',
+        body:JSON.stringify({
+          spreadsheetId:$('google-sheets-spreadsheet').value,
+          sheetId:Number($('google-sheets-tab').value)
+        })
+      });
+      googleSheetsStatus.selection=result.selection;
+      renderGoogleSheets(googleSheetsStatus);
+      setGoogleSheetsMessage(`Saved destination: ${result.selection.spreadsheetName} — ${result.selection.sheetTitle}`, true);
+    }catch(error){ setGoogleSheetsMessage(error.message, false); }
+    finally{$('google-sheets-save-btn').disabled=!$('google-sheets-tab').value;}
+  }
+
+async function disconnectGoogleDrive(){
+    if(!confirm('Disconnect Google Drive and clear the selected spreadsheet destination?')) return;
+    try{
+      await adminFetch('/api/admin/google-sheets/connection',{method:'DELETE'});
+      googleSheetsStatus={...googleSheetsStatus,connected:false,accountEmail:'',selection:null,connectionError:''};
+      renderGoogleSheets(googleSheetsStatus);
+    }catch(error){setGoogleSheetsMessage(error.message,false);}
 }
 
 function renderOverview(rows){
@@ -205,5 +379,17 @@ $('logout-btn').addEventListener('click', logout);
 $('refresh-btn').addEventListener('click', loadAdmin);
 $('save-settings-btn').addEventListener('click', saveSettings);
 $('reset-settings-btn').addEventListener('click', loadAdmin);
+$('google-sheets-connect-btn').addEventListener('click', connectGoogleDrive);
+$('google-sheets-disconnect-btn').addEventListener('click', disconnectGoogleDrive);
+$('google-sheets-find-btn').addEventListener('click', () => findGoogleSpreadsheets());
+$('google-sheets-more-btn').addEventListener('click', () => findGoogleSpreadsheets(true));
+$('google-sheets-search').addEventListener('keydown', event => {
+  if(event.key==='Enter'){event.preventDefault();findGoogleSpreadsheets();}
+});
+$('google-sheets-spreadsheet').addEventListener('change', event => loadGoogleTabs(event.target.value));
+$('google-sheets-tab').addEventListener('change', event => {
+  $('google-sheets-save-btn').disabled=!event.target.value;
+});
+$('google-sheets-save-btn').addEventListener('click', saveGoogleSheetsSelection);
 initTabs();
 verifySession();

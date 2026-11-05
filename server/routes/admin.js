@@ -5,6 +5,15 @@ import { config } from '../config.js';
 import { readJsonl, getCounts, findUpload } from '../services/storage.js';
 import { getSettings, publicSettings, updateSettings } from '../services/settings.js';
 import { requireAdmin, createAdminToken } from '../utils/auth.js';
+import {
+  completeGoogleOAuth,
+  createGoogleOAuthUrl,
+  disconnectGoogleSheets,
+  getGoogleSheetsStatus,
+  listGoogleSpreadsheets,
+  listSpreadsheetTabs,
+  selectGoogleSheet
+} from '../services/google-sheets.js';
 
 const router = express.Router();
 
@@ -30,6 +39,20 @@ router.post('/login', async (req, res) => {
     expiresHours: config.adminSessionHours,
     user: { username: config.adminUsername, role: 'admin' }
   });
+});
+
+router.get('/google-sheets/oauth/callback', async (req, res) => {
+  if (req.query.error) return res.redirect('/admin/?googleSheets=error');
+  try {
+    const result = await completeGoogleOAuth({
+      code: String(req.query.code || ''),
+      state: String(req.query.state || '')
+    });
+    res.redirect(`${result.returnOrigin}/admin/?googleSheets=connected`);
+  } catch (error) {
+    console.error('Google Sheets OAuth callback failed:', error);
+    res.redirect('/admin/?googleSheets=error');
+  }
 });
 
 router.use(requireAdmin);
@@ -121,6 +144,67 @@ router.get('/uploads/:id/download', async (req, res, next) => {
 router.get('/settings', async (_req, res, next) => {
   try {
     res.json({ settings: await getSettings() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/google-sheets/status', async (_req, res, next) => {
+  try {
+    res.json(await getGoogleSheetsStatus());
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/google-sheets/oauth-url', (req, res) => {
+  try {
+    res.json({ url: createGoogleOAuthUrl(req.get('origin')) });
+  } catch (error) {
+    res.status(503).json({ error: error.message });
+  }
+});
+
+router.get('/google-sheets/spreadsheets', async (req, res, next) => {
+  try {
+    const result = await listGoogleSpreadsheets({
+      query: String(req.query.q || '').slice(0, 100),
+      pageToken: String(req.query.pageToken || '')
+    });
+    res.json({
+      spreadsheets: result.files || [],
+      nextPageToken: result.nextPageToken || ''
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/google-sheets/spreadsheets/:id/tabs', async (req, res, next) => {
+  try {
+    res.json(await listSpreadsheetTabs(req.params.id));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/google-sheets/selection', async (req, res, next) => {
+  try {
+    const { spreadsheetId, sheetId } = req.body || {};
+    if (typeof spreadsheetId !== 'string' || !Number.isInteger(Number(sheetId))) {
+      return res.status(400).json({ error: 'Choose a spreadsheet and tab.' });
+    }
+    const selection = await selectGoogleSheet({ spreadsheetId, sheetId });
+    res.json({ ok: true, selection });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/google-sheets/connection', async (_req, res, next) => {
+  try {
+    await disconnectGoogleSheets();
+    res.json({ ok: true });
   } catch (error) {
     next(error);
   }

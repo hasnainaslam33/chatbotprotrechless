@@ -55,7 +55,14 @@ export function parseJsonFromText(text) {
   }
 }
 
-function parseStructuredAnswer(text) {
+export function parseStructuredAnswer(text) {
+  const cleanText = (value) => typeof value === 'string'
+    ? value.replace(/\*\*|__|~~|`/g, '').trim()
+    : value;
+  const splitListItems = (value) => value
+    .split(/\s+[-•]\s+/)
+    .map((item) => cleanText(item.replace(/^[\s\-•]+/, '')))
+    .filter(Boolean);
   const result = {
     urgencyLevel: '',
     estimatedCost: '',
@@ -76,9 +83,18 @@ function parseStructuredAnswer(text) {
     return {
       ...result,
       ...json,
-      likelyCauseCategories: Array.isArray(json.likelyCauseCategories) ? json.likelyCauseCategories : [],
-      recommendedNextSteps: Array.isArray(json.recommendedNextSteps) ? json.recommendedNextSteps : [],
-      questionsToAskOrInformationToGather: Array.isArray(json.questionsToAskOrInformationToGather) ? json.questionsToAskOrInformationToGather : [],
+      urgencyLevel: cleanText(json.urgencyLevel),
+      estimatedCost: cleanText(json.estimatedCost),
+      aiReviewSummary: cleanText(json.aiReviewSummary),
+      summary: cleanText(json.summary),
+      softCTA: cleanText(json.softCTA),
+      disclaimer: cleanText(json.disclaimer),
+      whatICanSee: cleanText(json.whatICanSee),
+      likelyCauseCategories: Array.isArray(json.likelyCauseCategories) ? json.likelyCauseCategories.map(cleanText) : [],
+      recommendedNextSteps: Array.isArray(json.recommendedNextSteps) ? json.recommendedNextSteps.map(cleanText) : [],
+      questionsToAskOrInformationToGather: Array.isArray(json.questionsToAskOrInformationToGather)
+        ? json.questionsToAskOrInformationToGather.map(cleanText)
+        : [],
       links: Array.isArray(json.links) ? json.links : []
     };
   }
@@ -96,12 +112,23 @@ function parseStructuredAnswer(text) {
     'questions to ask': 'questionsToAskOrInformationToGather',
     'questions to ask or information to gather': 'questionsToAskOrInformationToGather',
     'soft cta': 'softCTA',
+    'get in touch with our team': 'softCTA',
     'disclaimer': 'disclaimer',
     'what i can see': 'whatICanSee',
     'links': 'links'
   };
 
-  const lines = String(text || '').replace(/\r/g, '').split('\n');
+  const sectionHeadings = Object.keys(sectionMap)
+    .sort((left, right) => right.length - left.length)
+    .map((heading) => heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|');
+  const normalizedText = String(text || '')
+    .replace(/\r/g, '')
+    .replace(/```(?:json)?\s*|\s*```/gi, '')
+    .replace(new RegExp(`\\*\\*\\s*(${sectionHeadings})\\s*:\\s*\\*\\*`, 'gi'), '\n$1:')
+    .replace(new RegExp(`\\s+(${sectionHeadings})\\s*:`, 'gi'), '\n$1:')
+    .replace(/\*\*|__|~~|`/g, '');
+  const lines = normalizedText.split('\n');
   for (let rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
@@ -120,10 +147,10 @@ function parseStructuredAnswer(text) {
           }
         } else if (Array.isArray(result[currentKey])) {
           if (value) {
-            result[currentKey].push(value);
+            result[currentKey].push(...splitListItems(value));
           }
         } else {
-          result[currentKey] = value;
+          result[currentKey] = cleanText(value);
         }
         continue;
       }
@@ -133,18 +160,18 @@ function parseStructuredAnswer(text) {
     if (listMatch && currentKey) {
       const item = listMatch[1].trim();
       if (Array.isArray(result[currentKey])) {
-        result[currentKey].push(item);
+        result[currentKey].push(...splitListItems(item));
       } else {
-        result[currentKey] += (result[currentKey] ? ' ' : '') + item;
+        result[currentKey] += (result[currentKey] ? ' ' : '') + cleanText(item);
       }
       continue;
     }
 
     if (currentKey) {
       if (Array.isArray(result[currentKey])) {
-        result[currentKey].push(line);
+        result[currentKey].push(cleanText(line));
       } else {
-        result[currentKey] += (result[currentKey] ? ' ' : '') + line;
+        result[currentKey] += (result[currentKey] ? ' ' : '') + cleanText(line);
       }
     }
   }
@@ -254,7 +281,8 @@ function getGithubClient() {
 async function createGithubAnswer({ instructions, textInput, uploadedFiles, fallback }) {
   const github = getGithubClient();
   if (!github) {
-    return { mode: 'fallback', answer: fallback(), model: 'local-fallback' };
+    const answer = fallback();
+    return { mode: 'fallback', answer, structuredAnswer: parseStructuredAnswer(answer), model: 'local-fallback' };
   }
 
   const { content } = await buildMultimodalContent({ textInput, uploadedFiles });
@@ -286,9 +314,12 @@ async function createGithubAnswer({ instructions, textInput, uploadedFiles, fall
     };
   } catch (error) {
     console.error('GitHub Models request failed:', error);
+    const answer = fallback();
     return {
       mode: 'github-error-fallback',
-      answer: `${fallback()}\n\nAI provider error: ${error.message}. Check that GITHUB_MODELS_TOKEN has the models:read permission and that GITHUB_MODEL is available to your account.`,
+      answer: `${answer}\n\nAI provider error: ${error.message}. Check that GITHUB_MODELS_TOKEN has the models:read permission and that GITHUB_MODEL is available to your account.`,
+      structuredAnswer: parseStructuredAnswer(answer),
+      error: error.message,
       model: config.githubModel
     };
   }
@@ -316,9 +347,11 @@ export async function createAiAnswer({ module, userType, messages = [], formCont
 
   const openai = getClient();
   if (!openai) {
+    const answer = fallbackAnswer({ module, message: latest, userType, formContext });
     return {
       mode: 'fallback',
-      answer: fallbackAnswer({ module, message: latest, userType, formContext }),
+      answer,
+      structuredAnswer: parseStructuredAnswer(answer),
       model: 'local-fallback'
     };
   }
@@ -348,9 +381,12 @@ export async function createAiAnswer({ module, userType, messages = [], formCont
     };
   } catch (error) {
     console.error('OpenAI request failed:', error);
+    const answer = fallbackAnswer({ module, message: latest, userType, formContext });
     return {
       mode: 'openai-error-fallback',
-      answer: `${fallbackAnswer({ module, message: latest, userType, formContext })}\n\nAI provider error: ${error.message}. Check that the model supports image/file input, your API key has billing enabled, and uploaded files are under the configured size limits.`,
+      answer: `${answer}\n\nAI provider error: ${error.message}. Check that the model supports image/file input, your API key has billing enabled, and uploaded files are under the configured size limits.`,
+      structuredAnswer: parseStructuredAnswer(answer),
+      error: error.message,
       model: config.openaiModel
     };
   }

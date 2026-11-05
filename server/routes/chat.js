@@ -59,6 +59,7 @@ router.post('/', chatLimiter, async (req, res, next) => {
       structuredAnswer: result.structuredAnswer || null,
       mode: result.mode,
       model: result.model,
+      providerError: result.error ? 'AI service is unavailable. Showing general guidance instead.' : null,
       links: result.structuredAnswer?.links?.length ? result.structuredAnswer.links : moduleInfo.links,
       disclaimer: 'This AI tool provides educational guidance only. Final diagnosis, repair method, pricing, code compliance, permits, and safety decisions require professional inspection and verification.'
     });

@@ -3,6 +3,8 @@ node_modules/
 .DS_Store
 data/*.jsonl
 data/company-research-cache.json
+data/google-sheets-connection.json
+data/google-sheets-connection.json.tmp
 uploads/*
 !uploads/.gitkeep
 !data/.gitkeep

@@ -2,24 +2,21 @@ export const toolPages = [
   {
     slug: 'free-second-opinion',
     title: 'Free Sewer Second Opinion',
-    lead: 'Upload or describe a camera video, inspection report, estimate, photos, written recommendation, symptoms, and service area.',
+    lead: 'Share your contact details, contractor recommendation, and supporting files to get a free sewer second opinion.',
     fields: [
-      { label: 'Sewer camera video', type: 'text' },
-      { label: 'Inspection report', type: 'text' },
-      { label: 'Estimate', type: 'text' },
-      { label: 'Photos', type: 'text' },
-      { label: 'Written recommendation', type: 'text' },
-      { label: 'Symptoms', type: 'text' },
-      { label: 'Address or service area', type: 'text' },
-      { label: 'Upload files', type: 'file' },
-      { label: 'Describe what happened', type: 'textarea' }
-    ],
-    expectedOutput: [
-      'Plain-English summary',
-      'Possible missing information',
-      'Red flags',
-      'Questions to ask the contractor',
-      'Repair, cleaning, jetting, lining, bursting, spot repair, or replacement review'
+      { label: 'Full name', name: 'full-name', type: 'text' },
+      { label: 'Phone number', name: 'phone-number', type: 'tel' },
+      { label: 'Email', name: 'email', type: 'email' },
+      { label: 'Property Address', name: 'address', type: 'text' },
+      { label: 'Contractor recommendation', name: 'contractor-recommendation', type: 'text' },
+      {
+        label: 'Upload files',
+        name: 'upload-files',
+        type: 'file',
+        multiple: true,
+        accept: 'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt'
+      },
+      { label: 'Describe what happened', name: 'describe-what-happened', type: 'textarea' }
     ],
     button: { label: 'Get AI recommendation', variant: 'btn' }
   },
@@ -45,16 +42,46 @@ export const toolPages = [
         label: 'What is happening right now?',
         name: 'emergency',
         type: 'checkboxGroup',
-        options: [
-          'Sewage actively entering home or business',
-          'Multiple fixtures backing up',
-          'Toilets not flushing',
-          'Sewage smell',
-          'Water near electrical systems',
-          'Restaurant kitchen shutdown risk',
-          'Tenant habitability issue',
-          'Real estate closing deadline',
-          'Prior repeated backups'
+        optionGroups: [
+          {
+            label: 'Drainage and plumbing symptoms',
+            options: [
+              'One slow fixture',
+              'Recurring slow drainage',
+              'Gurgling drains or pipes',
+              'Toilets not flushing',
+              'Multiple fixtures backing up',
+              'Sewage smell or intermittent odor'
+            ]
+          },
+          {
+            label: 'Sewage and emergency conditions',
+            options: [
+              'Sewage actively entering occupied home or business',
+              'Active overflow from outside cleanout',
+              'Rapid or uncontrolled sewage overflow',
+              'Water or sewage near electrical systems',
+              'No functioning sanitation'
+            ]
+          },
+          {
+            label: 'Property and business impact',
+            options: [
+              'Multiple occupied units affected',
+              'Tenant habitability issue',
+              'Restaurant kitchen shutdown risk',
+              'Real estate closing deadline',
+              'Immediate health or property-damage risk'
+            ]
+          },
+          {
+            label: 'Previous plumbing history',
+            options: [
+              'Prior root intrusion or root-related issues',
+              'Repeated drain cleaning history',
+              'Previous sewage backups'
+            ]
+          }
         ]
       }
     ],
@@ -94,7 +121,6 @@ export const toolPages = [
       { label: 'Upload files', type: 'file' },
       { label: 'Describe what happened', type: 'textarea' }
     ],
-    expectedOutput: ['Defect explanation', 'Risk summary', 'Repair option review', 'Client-ready next step'],
     button: { label: 'Get AI recommendation', variant: 'btn' }
   },
   {
@@ -112,7 +138,6 @@ export const toolPages = [
       { label: 'Upload files', type: 'file' },
       { label: 'Describe what happened', type: 'textarea' }
     ],
-    expectedOutput: ['Urgency level', 'Likely cause categories', 'Dispatch recommendation', 'Repair planning notes'],
     button: { label: 'Get AI recommendation', variant: 'btn' }
   },
   {
@@ -185,7 +210,6 @@ export const toolPages = [
       { label: 'Upload files', type: 'file' },
       { label: 'Describe what happened', type: 'textarea' }
     ],
-    expectedOutput: ['Roots', 'Offset joint', 'Belly', 'Broken pipe', 'Cracked pipe', 'Collapsed pipe', 'Heavy scale', 'Grease', 'Foreign object', 'Poor pitch', 'Failed repair'],
     button: { label: 'Get AI recommendation', variant: 'btn' }
   },
   {

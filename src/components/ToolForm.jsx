@@ -3,13 +3,30 @@ import { AIResponse } from './AIResponse.jsx';
 
 function renderField(field, index, values, onChange) {
   const key = `${field.label}-${index}`;
-  const name = field.name || field.label.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+  const name = getFieldName(field);
+
+  if (field.type === 'file') {
+    return (
+      <div className="field" key={key}>
+        <label htmlFor={name}>{field.label}</label>
+        <input
+          id={name}
+          type="file"
+          name={name}
+          multiple={field.multiple}
+          accept={field.accept}
+          onChange={(event) => onChange(name, Array.from(event.target.files || []))}
+        />
+      </div>
+    );
+  }
 
   if (field.type === 'textarea') {
     return (
       <div className="field" key={key}>
-        <label>{field.label}</label>
+        <label htmlFor={name}>{field.label}</label>
         <textarea
+          id={name}
           name={name}
           value={values[name] || ''}
           onChange={(event) => onChange(name, event.target.value)}
@@ -22,8 +39,8 @@ function renderField(field, index, values, onChange) {
   if (field.type === 'select') {
     return (
       <div className="field" key={key}>
-        <label>{field.label}</label>
-        <select name={name} value={values[name] || ''} onChange={(event) => onChange(name, event.target.value)}>
+        <label htmlFor={name}>{field.label}</label>
+        <select id={name} name={name} value={values[name] || ''} onChange={(event) => onChange(name, event.target.value)}>
           {field.options.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -35,28 +52,32 @@ function renderField(field, index, values, onChange) {
   }
 
   if (field.type === 'checkboxGroup') {
+    const optionGroups = field.optionGroups || [{ label: '', options: field.options }];
     return (
       <div className="field" key={key}>
         <label>{field.label}</label>
         <div className="check-grid">
-          {field.options.map((option) => (
-            <label className="check" key={option}>
-              <input
-                type="checkbox"
-                name={name}
-                value={option}
-                checked={Boolean(values[name]?.includes(option))}
-                onChange={(event) => {
-                  const current = values[name] || [];
-                  const updated = event.target.checked
-                    ? [...current, option]
-                    : current.filter((item) => item !== option);
-                  onChange(name, updated);
-                }}
-              />{' '}
-              {option}
-            </label>
-          ))}
+          {optionGroups.flatMap((group) => [
+            ...(group.label ? [<h3 className="check-group-heading" key={`${group.label}-heading`}>{group.label}</h3>] : []),
+            ...group.options.map((option) => (
+              <label className="check" key={option}>
+                <input
+                  type="checkbox"
+                  name={name}
+                  value={option}
+                  checked={Boolean(values[name]?.includes(option))}
+                  onChange={(event) => {
+                    const current = values[name] || [];
+                    const updated = event.target.checked
+                      ? [...current, option]
+                      : current.filter((item) => item !== option);
+                    onChange(name, updated);
+                  }}
+                />{' '}
+                {option}
+              </label>
+            ))
+          ])}
         </div>
       </div>
     );
@@ -64,8 +85,9 @@ function renderField(field, index, values, onChange) {
 
   return (
     <div className="field" key={key}>
-      <label>{field.label}</label>
+      <label htmlFor={name}>{field.label}</label>
       <input
+        id={name}
         type={field.type || 'text'}
         name={name}
         value={values[name] || ''}
@@ -74,6 +96,10 @@ function renderField(field, index, values, onChange) {
       />
     </div>
   );
+}
+
+function getFieldName(field) {
+  return field.name || field.label.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
 }
 
 function buildResult(risk, title, summary, nextSteps, links) {
@@ -90,15 +116,21 @@ function buildResult(risk, title, summary, nextSteps, links) {
 }
 
 function normalizeList(value) {
+  const cleanItem = (item) => String(item)
+    .replace(/\*\*|__|~~|`/g, '')
+    .replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '')
+    .replace(/^step\s+\d+[:.)-]\s*/i, '')
+    .trim();
+  const keepItem = (item) => item && !/^step\s+\d+$/i.test(item);
   if (Array.isArray(value)) {
-    return value.filter(Boolean).map((item) => String(item).trim()).filter(Boolean);
+    return value.filter(Boolean).map(cleanItem).filter(keepItem);
   }
 
   if (typeof value === 'string') {
     return value
-      .split(/\n|•|-/)
-      .map((item) => item.replace(/^[\s\-•]+/, '').trim())
-      .filter(Boolean);
+      .split(/\n|•|\s+-\s+/)
+      .map((item) => cleanItem(item.replace(/^[\s\-•]+/, '')))
+      .filter(keepItem);
   }
 
   return [];
@@ -151,14 +183,15 @@ function parseStructuredResponse(payload) {
 function buildResponseResult(data) {
   const structured = parseStructuredResponse(data);
   const risk = String(structured?.urgencyLevel || structured?.urgency || 'Medium');
-  const title = structured?.aiReviewSummary || structured?.summary || 'AI review complete';
+  const title = structured?.aiReviewSummary || 'AI review complete';
   const summary = structured?.summary || structured?.aiReviewSummary || data?.answer || 'The AI review is ready.';
   const nextSteps = normalizeList(structured?.recommendedNextSteps);
   const questions = normalizeList(structured?.questionsToAskOrInformationToGather);
   const likelyCauses = normalizeList(structured?.likelyCauseCategories);
   const softCTA = structured?.softCTA || '';
   const disclaimer = structured?.disclaimer || '';
-  const links = normalizeLinks(structured?.links || data?.links || []);
+  const links = normalizeLinks(structured?.links);
+  const fallbackLinks = normalizeLinks(data?.links);
   const cls = String(risk || 'medium').toLowerCase().replace(/moderate/g, 'medium').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'medium';
 
   return {
@@ -170,7 +203,7 @@ function buildResponseResult(data) {
     likelyCauses,
     softCTA,
     disclaimer,
-    links,
+    links: links.length ? links : fallbackLinks,
     cls
   };
 }
@@ -232,13 +265,29 @@ function buildFallbackResult(actionName, values) {
   if (actionName === 'runEmergencyCheck') {
     const signalsList = values.emergency || [];
     let emergencyScore = 0;
-    const critical = ['Sewage actively entering home or business', 'Multiple fixtures backing up', 'Water near electrical systems', 'Restaurant kitchen shutdown risk'];
+    const critical = [
+      'Sewage actively entering occupied home or business',
+      'Active overflow from outside cleanout',
+      'Rapid or uncontrolled sewage overflow',
+      'Water or sewage near electrical systems',
+      'No functioning sanitation',
+      'Immediate health or property-damage risk'
+    ];
+    const highUrgency = [
+      'Multiple fixtures backing up',
+      'Multiple occupied units affected',
+      'Tenant habitability issue',
+      'Restaurant kitchen shutdown risk',
+      'Previous sewage backups',
+      'Repeated drain cleaning history'
+    ];
+    const highUrgencyCount = signalsList.filter((signal) => highUrgency.includes(signal)).length;
     signalsList.forEach((signal) => {
-      emergencyScore += critical.includes(signal) ? 3 : 1;
+      emergencyScore += critical.includes(signal) ? 3 : highUrgency.includes(signal) ? 2 : 1;
     });
     if (signalsList.includes('Real estate closing deadline')) emergencyScore += 1;
-    if (emergencyScore >= 6) {
-      return buildResult('Emergency', 'Emergency sewer or drain risk', 'Active sewage, multiple backed-up fixtures, electrical proximity, or business shutdown risk should be treated as urgent.', ['Stop using water where possible.', 'Keep people away from contaminated water.', 'Call or request emergency service now.'], [{ text: 'Call Pro Trenchless Services now at (484) 206-5551.', href: 'tel:4842065551' }]);
+    if (signalsList.some((signal) => critical.includes(signal)) || (highUrgencyCount >= 2 && emergencyScore >= 4)) {
+      return buildResult('Emergency', 'Emergency sewer or drain risk', 'Active sewage, uncontrolled overflow, sanitation loss, electrical proximity, or immediate health or property risks should be treated as urgent.', ['Stop using water where possible.', 'Keep people away from contaminated water and electrical hazards.', 'Call or request emergency service now.'], [{ text: 'Call Pro Trenchless Services now at (484) 206-5551.', href: 'tel:4842065551' }]);
     }
     if (emergencyScore >= 3) {
       return buildResult('Urgent', 'Urgent sewer attention recommended', 'The issue may not be a full emergency yet, but it should not wait if symptoms are recurring or spreading.', ['Limit water use until the line is checked.', 'Request camera inspection with locate.', 'Ask for written findings and repair options.'], [{ text: 'Review sewer backup service options.', href: 'https://protrenchless.com/sewer-backup/' }]);
@@ -288,7 +337,7 @@ function buildFallbackResult(actionName, values) {
   return buildResult('Medium', 'Guided intake received', 'The form details have been captured. A follow-up message can be sent from the lead form below.', ['Add more context if the issue is recurring or urgent.', 'Review the lead form to send the details to Pro Trenchless.'], []);
 }
 
-export function ToolForm({ fields = [], button = {}, expectedOutput = [] }) {
+export function ToolForm({ fields = [], button = {}, expectedOutput = [], className = '' }) {
   const [values, setValues] = useState({});
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -305,12 +354,35 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [] }) {
     try {
       const moduleName = getModuleName(button.actionName, window.location.pathname);
       const userType = typeof window !== 'undefined' ? (window.localStorage.getItem('pt_user_type') || 'Homeowner') : 'Homeowner';
-      const contextLines = Object.entries(values)
+      const fileFields = fields.filter((field) => field.type === 'file');
+      const fileFieldNames = new Set(fileFields.map(getFieldName));
+      const files = fileFields.flatMap((field) => values[getFieldName(field)] || []);
+      const contextValues = Object.fromEntries(Object.entries(values).filter(([name]) => !fileFieldNames.has(name)));
+      const contextLines = Object.entries(contextValues)
         .filter(([, value]) => value && (Array.isArray(value) ? value.length : true))
         .map(([name, value]) => {
           const label = `${name}: ${Array.isArray(value) ? value.join(', ') : value}`;
           return label;
         });
+      let uploadedFileIds = [];
+
+      if (files.length) {
+        const uploadBody = new FormData();
+        uploadBody.append('module', moduleName);
+        uploadBody.append('userType', userType);
+        uploadBody.append('sourcePage', window.location.pathname);
+        files.forEach((file) => uploadBody.append('files', file));
+
+        const uploadResponse = await fetch('/api/uploads', { method: 'POST', body: uploadBody });
+        const uploadData = await uploadResponse.json();
+        if (!uploadResponse.ok) {
+          throw new Error(uploadData.error || `File upload failed with status ${uploadResponse.status}`);
+        }
+
+        contextValues[getFieldName(fileFields[0])] = files.map((file) => file.name);
+        contextLines.push(`Uploaded files: ${files.map((file) => file.name).join(', ')}`);
+        uploadedFileIds = uploadData.files.map((file) => file.id);
+      }
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -324,8 +396,8 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [] }) {
               content: `Use the intake details below to provide a clear sewer or drain decision-center response.\n\nIntake details:\n${contextLines.join('\n') || 'No intake details provided.'}`
             }
           ],
-          formContext: values,
-          uploadedFileIds: []
+          formContext: contextValues,
+          uploadedFileIds
         })
       });
 
@@ -345,6 +417,7 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [] }) {
         throw new Error((data && data.error) || `AI request failed with status ${response.status}`);
       }
 
+      if (data.providerError) setError(data.providerError);
       setResult(buildResponseResult(data));
     } catch (requestError) {
       setError(requestError.message || 'Could not reach the AI service.');
@@ -360,7 +433,7 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [] }) {
   }, [result]);
 
   return (
-    <div className="panel">
+    <div className={`panel ${className}`.trim()}>
       <h2>{button.panelHeading || 'Guided intake'}</h2>
       {button.panelSubheading ? <p className="mini">{button.panelSubheading}</p> : null}
       <div className="form-section">
