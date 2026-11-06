@@ -86,8 +86,10 @@ h1 { font-size: clamp(42px, 6vw, 74px);
 }
 .two-column-intake-form .form-section > .field:has(textarea),
 .two-column-intake-form .form-section > .field:has(.check-grid),
+.two-column-intake-form .form-section > .form-section-heading,
 .two-column-intake-form .form-section > .btn { grid-column: 1 / -1; }
 .two-column-intake-form .form-section > .field { min-width: 0; }
+.form-section-heading { margin: 0.6rem 0 0; font-size: 1.1rem; }
 .emergency-risk-form .check-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .tool-full { padding-bottom: 3rem; }
 .lead-review-cta {

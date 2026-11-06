@@ -108,20 +108,136 @@ export const toolPages = [
   },
   {
     slug: 'home-inspector-support',
-    title: 'Home Inspector Sewer Scope Support',
-    lead: 'Use this when a sewer scope shows roots, offsets, bellies, breaks, scale, failed repair, or uncertain findings.',
+    title: 'Repair Option Explainer',
+    lead: 'Tell us about your sewer problem. Our AI will help you understand potential repair methods, their costs, benefits and limitations.',
     fields: [
-      { label: 'Client role', type: 'text' },
-      { label: 'Scope report', type: 'text' },
-      { label: 'Video upload', type: 'text' },
-      { label: 'Defect marker', type: 'text' },
-      { label: 'Pipe material', type: 'text' },
-      { label: 'Location of concern', type: 'text' },
-      { label: 'Closing timeline', type: 'text' },
-      { label: 'Upload files', type: 'file' },
-      { label: 'Describe what happened', type: 'textarea' }
+      {
+        label: '1. What problem are you experiencing?',
+        name: 'problem',
+        type: 'select',
+        options: [
+          'Recurring sewer backups',
+          'Slow drains or repeated clogs',
+          'Sewage smell or odor',
+          'Pipe damage or leakage',
+          'Collapsed or broken sewer pipe',
+          'Tree root intrusion',
+          'Old or deteriorating sewer line',
+          'I am exploring repair options before a problem occurs',
+          'Other / Not sure'
+        ]
+      },
+      {
+        label: '2. Where is the problem located?',
+        name: 'location',
+        type: 'select',
+        options: [
+          'Underground sewer line',
+          'Inside the building / basement',
+          'House trap',
+          'Main sewer stack',
+          'Outside cleanout',
+          'Under driveway or yard',
+          'Not sure'
+        ]
+      },
+      {
+        label: '3. What symptoms have you noticed? (Select all that apply)',
+        name: 'symptoms',
+        type: 'checkboxGroup',
+        options: [
+          'Multiple fixtures backing up',
+          'Slow drainage',
+          'Gurgling sounds',
+          'Sewage odor',
+          'Water leakage',
+          'Repeated blockages',
+          'No visible symptoms',
+          'Other'
+        ]
+      },
+      {
+        label: '4. Has a sewer camera inspection been performed?',
+        name: 'inspection',
+        type: 'select',
+        options: [
+          'Yes, I have an inspection report',
+          "Yes, but I don't have the report",
+          'No, inspection not performed',
+          'Not sure'
+        ]
+      },
+      {
+        label: '5. What is the known condition of the pipe?',
+        name: 'pipe-condition',
+        type: 'select',
+        options: [
+          'Cracked or leaking',
+          'Root intrusion',
+          'Heavy scale or buildup',
+          'Misaligned joints',
+          'Partially collapsed',
+          'Completely collapsed',
+          'Pipe is structurally sound',
+          'Not sure'
+        ]
+      },
+      {
+        label: '6. What type of pipe do you have?',
+        name: 'pipe-type',
+        type: 'select',
+        options: ['Cast iron', 'Clay', 'PVC / Plastic', 'Concrete', 'Orangeburg', 'Other', 'Not sure']
+      },
+      {
+        label: '7. What access is available to the sewer line?',
+        name: 'access',
+        type: 'select',
+        options: ['Indoor cleanout', 'Outdoor cleanout', 'Basement access', 'Manhole access', 'No known access', 'Not sure']
+      },
+      {
+        label: '8. What is above or around the affected sewer line?',
+        name: 'surface',
+        type: 'select',
+        options: [
+          'Driveway',
+          'Landscaped yard',
+          'Concrete / Patio',
+          'Building foundation',
+          'Inside finished flooring',
+          'Street / Sidewalk',
+          'Not sure'
+        ]
+      },
+      {
+        label: '9. What would you like help with?',
+        name: 'repair-guidance',
+        type: 'select',
+        options: [
+          'Understand all possible repair options',
+          'Compare trenchless and traditional excavation',
+          'Understand repair costs and disruption',
+          'Find out whether pipe lining may be an option',
+          'Understand whether replacement is necessary',
+          'Get a second opinion on an existing repair recommendation'
+        ]
+      },
+      {
+        label: '10. Additional information (optional)',
+        name: 'additional-information',
+        type: 'textarea',
+        placeholder: 'Share any other details that may help explain your sewer problem.'
+      },
+      { label: 'Your information', type: 'sectionHeading' },
+      { label: 'Full name', name: 'full-name', type: 'text' },
+      { label: 'Email', name: 'email', type: 'email' },
+      { label: 'Phone number', name: 'phone-number', type: 'tel' }
     ],
-    button: { label: 'Get AI recommendation', variant: 'btn' }
+    button: {
+      label: 'Explain my repair options',
+      variant: 'btn',
+      panelHeading: 'Repair Option Assessment',
+      panelSubheading: 'Answer what you can. Your assessment will explain possible methods, costs, benefits, and limitations.'
+    }
   },
   {
     slug: 'property-manager-drain-triage',

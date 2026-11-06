@@ -131,7 +131,7 @@ export default function ToolPage() {
                           : isEmergencyRiskCheck
                             ? 'Need urgent help with a sewer backup?'
                             : isHomeInspectorSupport
-                              ? 'Need help reviewing a sewer scope?'
+                            ? 'Need help understanding your repair options?'
                               : isPropertyManagerTriage
                                 ? 'Need help with a tenant drain issue?'
                           : 'Need help with your sewer project?'}
@@ -146,7 +146,7 @@ export default function ToolPage() {
                           : isCostEstimator
                             ? 'Get help estimating your sewer repair'
                             : isHomeInspectorSupport
-                              ? 'Get professional help reviewing your sewer scope'
+                              ? 'Get professional help comparing sewer repair options'
                               : isPropertyManagerTriage
                                 ? 'Get help triaging your property drain issue'
                             : 'Talk with a sewer professional about the backup'}
@@ -182,7 +182,7 @@ export default function ToolPage() {
                     : isEmergencyRiskCheck
                       ? 'Request emergency sewer assistance'
                       : isHomeInspectorSupport
-                        ? 'Request a professional sewer scope review'
+                      ? 'Request professional sewer repair option guidance'
                         : isPropertyManagerTriage
                           ? 'Request property manager drain support'
                       : 'Request a professional estimate review'

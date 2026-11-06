@@ -101,13 +101,13 @@ export const moduleConfigs = {
     ]
   },
   'home-inspector-support': {
-    title: 'Home Inspector Sewer Scope Support',
-    purpose: 'Explain sewer scope concerns, risk, and client-ready next steps for inspection reports.',
-    primaryCta: 'Request sewer scope support',
+    title: 'Repair Option Explainer',
+    purpose: 'Explain potential sewer repair methods, costs, benefits, limitations, and whether repair or replacement may be appropriate.',
+    primaryCta: 'Request sewer repair option guidance',
     links: [
-      { text: 'Review home inspector sewer scope support.', href: 'https://protrenchless.com/home-inspector-sewer-scope-support/' },
-      { text: 'Learn about sewer lateral inspections.', href: 'https://protrenchless.com/sewer-lateral-inspection/' },
-      { text: 'Send sewer scope details.', href: '#lead-form' }
+      { text: 'Review sewer repair options.', href: 'https://protrenchless.com/sewer-repair/' },
+      { text: 'Learn about trenchless sewer repair.', href: 'https://protrenchless.com/trenchless-sewer-repair/' },
+      { text: 'Send sewer repair details.', href: '#lead-form' }
     ]
   },
   'commercial-property-review': {

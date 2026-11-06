@@ -5,6 +5,10 @@ function renderField(field, index, values, onChange) {
   const key = `${field.label}-${index}`;
   const name = getFieldName(field);
 
+  if (field.type === 'sectionHeading') {
+    return <h3 className="form-section-heading" key={key}>{field.label}</h3>;
+  }
+
   if (field.type === 'file') {
     return (
       <div className="field" key={key}>
@@ -41,6 +45,9 @@ function renderField(field, index, values, onChange) {
       <div className="field" key={key}>
         <label htmlFor={name}>{field.label}</label>
         <select id={name} name={name} value={values[name] || ''} onChange={(event) => onChange(name, event.target.value)}>
+          <option value="" disabled>
+            {field.placeholder || 'Select an option'}
+          </option>
           {field.options.map((option) => (
             <option key={option} value={option}>
               {option}

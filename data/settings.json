@@ -65,8 +65,8 @@
     },
     "home-inspector-support": {
       "enabled": true,
-      "title": "Home Inspector Sewer Scope Support",
-      "primaryCta": "Request sewer scope support"
+      "title": "Repair Option Explainer",
+      "primaryCta": "Request sewer repair option guidance"
     },
     "commercial-property-review": {
       "enabled": true,
