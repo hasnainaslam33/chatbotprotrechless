@@ -9,3 +9,4 @@ uploads/*
 !uploads/.gitkeep
 !data/.gitkeep
 npm-debug.log*
+dist/
