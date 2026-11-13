@@ -12,7 +12,7 @@ export function Footer() {
                 <strong>Address:</strong> 850 Collegeville Rd<br />Ste 1, Collegeville, PA 19426
               </p>
               <p>
-                <strong>Phone:</strong> (484) 801-7142
+                <strong>Phone:</strong> (484) 801-7242
               </p>
             </div>
           </div>
