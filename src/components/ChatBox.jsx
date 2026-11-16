@@ -6,6 +6,15 @@ const helpfulLinks = [
   { text: 'Schedule a Pro Trenchless sewer inspection.', href: 'https://answers.protrenchless.com/#lead-form' }
 ];
 
+const suggestions = [
+  'Why does my drain keep clogging?',
+  'Can my sewer be fixed without digging?',
+  'What affects sewer repair costs?',
+  'Buying a home? What should I check?'
+];
+
+const trustPoints = ['Master plumber led', 'Local, family-owned', 'Inspection-based recommendations'];
+
 function FormattedResponse({ text }) {
   const fullText = String(text || '');
   const cleanLine = (line) => line
@@ -111,6 +120,7 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
   const [started, setStarted] = useState(false);
   const assistantStartRef = useRef(null);
   const scrollContainerRef = useRef(null);
+  const activeRequestRef = useRef(null);
 
   const newestAssistant = messages.filter((message) => message.role === 'assistant').at(-1);
   useEffect(() => {
@@ -151,11 +161,14 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
       return;
     }
 
+    const controller = new AbortController();
+    activeRequestRef.current = controller;
     try {
       const resp = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ module: 'symptom-checker', userType: selectedType || 'Homeowner', messages: [userMsg] })
+        body: JSON.stringify({ module: 'symptom-checker', userType: selectedType || 'Homeowner', messages: [userMsg] }),
+        signal: controller.signal
       });
       const data = await resp.json();
       const answer = (data && data.answer) ? data.answer : 'Sorry — no answer available.';
@@ -163,12 +176,25 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
         ? { ...message, isThinking: false, time: Date.now(), content: answer }
         : message));
     } catch (err) {
+      if (err.name === 'AbortError') return;
       setMessages((current) => current.map((message) => message.id === thinkingMsg.id
         ? { ...message, isThinking: false, time: Date.now(), content: 'Error contacting server. Try again later.' }
         : message));
     } finally {
-      setLoading(false);
+      if (activeRequestRef.current === controller) {
+        activeRequestRef.current = null;
+        setLoading(false);
+      }
     }
+  }
+
+  function closeConversation() {
+    activeRequestRef.current?.abort();
+    activeRequestRef.current = null;
+    setInput('');
+    setMessages([]);
+    setStarted(false);
+    setLoading(false);
   }
 
   function handleKey(e) {
@@ -190,9 +216,24 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
         <div className={`chat-panel panel ${inline ? 'chat-embedded' : ''} ${started ? 'chat-started' : ''}`}>
           {inline ? (
             <div className="chat-shell">
+              {started && (
+                <div className="chat-session-controls">
+                  <button
+                    type="button"
+                    className="chat-close-btn"
+                    onClick={closeConversation}
+                    aria-label="Close conversation and return to the start"
+                  >
+                    <span aria-hidden="true">×</span>
+                    Close
+                  </button>
+                </div>
+              )}
               <div className={`chat-hero ${started ? 'is-hidden' : ''}`}>
-                <h2 className="chat-hero-title">How can we help you today?</h2>
-                <p className="chat-hero-sub">Chat with Flo for fast help with sewer and drain answers or scheduling.</p>
+                <span className="ah-kicker">Pro Trenchless Answer Engine</span>
+                <span className="ah-pill"><strong>Meet Flo</strong> <span aria-hidden="true">·</span> Your AI sewer &amp; drain guide</span>
+                <h1 className="ah-title">Sewer &amp; drain questions?<span>Get clear answers.</span></h1>
+                <p className="chat-hero-sub">Understand the problem, explore your options, and know your next step.</p>
               </div>
 
               <div ref={scrollContainerRef} className={`chat-message-stream ${started ? 'is-visible' : ''}`}>
@@ -228,24 +269,47 @@ export default function ChatBox({ selectedType = 'Homeowner', inline = false }) 
               </div>
 
               <div className={`chat-composer ${started ? 'is-bottom' : 'is-center'}`}>
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKey}
-                  rows={1}
-                  placeholder="Describe the issue (e.g. basement backup when it rains)"
-                  className="chat-input-field"
-                />
-                <div className="chat-input-actions">
-                  <button className="clear-btn" onClick={() => setInput('')}>Clear</button>
-                  <button className="ask-btn btn" onClick={() => sendMessage()} disabled={loading}>{loading ? 'Thinking...' : 'Ask Flo'}</button>
+                <div className="ah-card">
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKey}
+                    rows={2}
+                    placeholder="What’s happening with your sewer or drain?"
+                    aria-label="Describe your sewer or drain problem"
+                    className="ah-input"
+                  />
+                  <div className="ah-card-foot">
+                    <span className="ah-hint">Ask in your own words.</span>
+                    <button className="ask-btn btn" onClick={() => sendMessage()} disabled={loading}>
+                      {loading ? 'Thinking...' : <>Get my answer <span aria-hidden="true">↑</span></>}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className={`chat-suggested ${started ? 'is-hidden' : ''}`}>
-                <button className="suggestion" onClick={() => sendMessage('Why is my basement backing up when it rains?')}>Why is my basement backing up?</button>
-                <button className="suggestion" onClick={() => sendMessage('How much does a camera inspection cost?')}>Camera inspection cost</button>
-                <button className="suggestion" onClick={() => sendMessage('What causes recurring clogs?')}>Recurring clogs causes</button>
+              <div className={`ah-extras ${started ? 'is-hidden' : ''}`}>
+                <div className="ah-chips">
+                  {suggestions.map((question) => (
+                    <button key={question} type="button" className="ah-chip" onClick={() => sendMessage(question)}>
+                      <svg className="ah-chip-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.3 8.7 8.7 0 0 1-3.6-.8L3 21l1.9-5A8.2 8.2 0 0 1 4 11.5 8.4 8.4 0 0 1 12.5 3.2 8.4 8.4 0 0 1 21 11.5z" /></svg>
+                      <span>{question}</span>
+                      <svg className="ah-chip-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                    </button>
+                  ))}
+                </div>
+
+                <ul className="ah-trust">
+                  {trustPoints.map((point) => (
+                    <li key={point}>
+                      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#dff1d2" /><path d="m7 12.5 3.2 3.2L17 9" fill="none" stroke="#4d9a1f" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+
+                <a className="ah-person" href="tel:4842065551">Prefer a person? Talk to our team <span aria-hidden="true">→</span></a>
+                <p className="ah-disclaimer">Flo provides AI guidance. An on-site inspection confirms pipe condition.</p>
               </div>
             </div>
           ) : (

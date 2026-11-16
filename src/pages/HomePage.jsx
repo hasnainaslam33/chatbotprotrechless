@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import HeroSection from '../components/HeroSection.jsx';
 import ToolCard from '../components/ToolCard.jsx';
 import { toolPages } from '../data/toolPages.js';
 import ChatBox from '../components/ChatBox.jsx';
@@ -20,8 +19,7 @@ export default function HomePage() {
 
   return (
     <main className="page home-page">
-      <HeroSection selectedType={selectedType} onSelect={setSelectedType} />
-      <section className="section chat-section">
+      <section className="answer-hero">
         <div className="container">
           <ChatBox inline selectedType={selectedType} />
         </div>

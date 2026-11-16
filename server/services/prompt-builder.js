@@ -19,6 +19,35 @@ export function normalizeUserType(value) {
 }
 
 function moduleSpecificOutputRules(moduleKey) {
+  if (moduleKey === 'sewer-camera-review') {
+    return `
+Sewer CCTV report rules:
+- Return exactly one valid JSON object with the top-level keys "urgencyLevel", "summary", and "cameraReport". Do not wrap the JSON in Markdown.
+- The cameraReport object must include: "overallCondition", "reviewBasis", "property", "keyDetermination", "executiveSummary", "confidenceNote", "priorityItems", "scopeMethod", "findings", "strategy", "evidence", "nextActions", "acceptanceCriteria", "acceptanceNote", "finalDetermination", "reviewer", and "credentials".
+- Use the exact overallCondition values: "SATISFACTORY WITHIN THE DOCUMENTED SCOPE", "MAINTENANCE OR FURTHER EVALUATION REQUIRED", "UNSATISFACTORY", or "UNABLE TO DETERMINE". These are not municipal pass/fail results. Do not default to UNSATISFACTORY.
+- Use only actual form details and visible supplied still frames as property evidence. Do not treat example images, report layouts, filenames, or technician statements as independent visual evidence. Never invent address, client, dates, report ID, access point, direction, material, diameter, counter, distance, inspection, or credentials. Use "Not provided", "Not visible", "Not verified", or "Unable to assess".
+- The uploaded video is represented to you only by timestamped still frames sampled in the browser. State the actual sampled-frame method and timestamps. Do not claim a complete or frame-by-frame video review. Do not infer more between frames than the evidence supports.
+- If no usable still frames are present, set overallCondition to "UNABLE TO DETERMINE", leave findings and priorityItems empty, do not prescribe repair, and explain what evidence is needed.
+- Keep each observation separate from its interpretation and confirmation needed. Severity must be CRITICAL, HIGH, MODERATE, LOW, or NOT ASSESSABLE; confidence must separately be high, moderate, or low. CRITICAL means documented immediate consequence; HIGH means prompt corrective evaluation; MODERATE means planned follow-up; LOW means minor demonstrated effect. Unclear imagery is a limitation, not a pipe defect.
+- Record the source filename, elapsed timestamp, and visible raw counter for each finding when available. Distinguish raw counter readings from verified distance from the access point. Never treat footage counters as excavation coordinates or depths; disclose unknown counter calibration and do not calculate adjusted distances without a supported access reference.
+- Do not claim collapse, belly, adverse grade, leakage, leak-tightness, pipe age, remaining life, causation, code compliance, or municipal approval unless directly supported. Standing water alone does not establish a belly or measured grade. CCTV alone does not prove watertightness or exclude concealed defects.
+- Do not assign arbitrary scores, standardized grades, prices, warranties, or engineering / municipal certification. Recommend least-destructive follow-up supported by evidence; do not promote replacement without evidence.
+- Explain relevant visibility, coverage, water, blur, glare, deposits, or termination limitations. A raw camera image cannot establish pipe slope or leak-tightness. Do not recommend aggressive cleaning or structural repair without a supported reason and material/condition verification.
+- The cameraReport object must use these fields:
+  property: { "address", "client", "reportId", "inspectionDate", "reportDate", "accessPoint", "inspector", "reviewer" }
+  priorityItems: [{ "priority", "findingId", "finding", "severity", "operationalEffect" }]
+  scopeMethod: { "purpose", "method", "accessDirection", "pipeDescription", "coverage", "cleaningFlow", "limitationSummary", "limitations": [], "fileInventory": [{ "file", "duration", "direction", "counterRange", "counterAtAccess", "approximateLength" }] }
+  findings: [{ "id", "source", "rawCounter", "observation", "significance", "confirmation", "severity", "confidence" }]
+  strategy: { "summary", "options": [{ "option", "bestUse", "advantages", "limitations" }] }
+  evidence: [{ "label", "frameIndex", "findingIds": [], "source", "timestamp", "counter", "caption" }]
+  nextActions: [{ "action", "purpose", "priority", "responsible" }]
+  acceptanceCriteria: []
+- frameIndex is the 1-based position of a supplied sampled still. Include only evidence frames actually provided. Connect a frame to finding IDs only when supported.
+- Include all seven numbered report sections in cameraReport content: executive summary, scope/method/limitations, detailed findings, corrective strategy, representative video evidence, required next actions, and post-repair/post-clean acceptance criteria. Leave empty lists when no evidence supports an entry; the frontend supplies honest "not assessed" text.
+- These structured report instructions supersede the general short-answer and no-table formatting guidance for this module. Keep wording concise, plain-English, and defensible.
+`;
+  }
+
   if (moduleKey === 'cost-estimator') {
     return `
 Cost Estimator output rules:

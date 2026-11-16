@@ -1,7 +1,11 @@
 import React from 'react';
+import SewerCameraReport from './SewerCameraReport.jsx';
 
 export function AIResponse({ result }) {
   if (!result) return null;
+  if (result.cameraReport) {
+    return <SewerCameraReport report={result.cameraReport} evidenceFrames={result.cameraReport.evidenceFrames} />;
+  }
 
   return (
     <div className={`result-box show result-${result.cls}`}>

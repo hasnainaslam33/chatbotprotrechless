@@ -24,7 +24,8 @@ export default function ToolPage() {
     isEmergencyRiskCheck ||
     isHomeInspectorSupport ||
     isPropertyManagerTriage;
-  const hasLeadReviewModal = page?.component === 'estimate-comparison' || hasBottomLeadCta;
+  const showBottomLeadCta = hasBottomLeadCta && !isCameraReview;
+  const hasLeadReviewModal = page?.component === 'estimate-comparison' || showBottomLeadCta;
   const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
   const leadDialogRef = useRef(null);
   const leadTriggerRef = useRef(null);
@@ -118,7 +119,7 @@ export default function ToolPage() {
                 <LeadForm />
               </div>
             ) : null}
-            {hasBottomLeadCta ? (
+            {showBottomLeadCta ? (
               <div className="lead-review-cta">
                 <div>
                   <span className="lead-review-eyebrow">

@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AIResponse } from './AIResponse.jsx';
+import { extractVideoFrames } from '../lib/videoFrames.js';
 
 function renderField(field, index, values, onChange) {
   const key = `${field.label}-${index}`;
@@ -19,6 +20,7 @@ function renderField(field, index, values, onChange) {
           name={name}
           multiple={field.multiple}
           accept={field.accept}
+          required={field.required}
           onChange={(event) => onChange(name, Array.from(event.target.files || []))}
         />
       </div>
@@ -33,6 +35,7 @@ function renderField(field, index, values, onChange) {
           id={name}
           name={name}
           value={values[name] || ''}
+          required={field.required}
           onChange={(event) => onChange(name, event.target.value)}
           placeholder={field.placeholder || 'Explain symptoms, contractor recommendation, or what the camera footage showed.'}
         />
@@ -98,6 +101,8 @@ function renderField(field, index, values, onChange) {
         type={field.type || 'text'}
         name={name}
         value={values[name] || ''}
+        required={field.required}
+        autoComplete={field.autoComplete}
         onChange={(event) => onChange(name, event.target.value)}
         placeholder={field.placeholder || 'Add details'}
       />
@@ -187,7 +192,89 @@ function parseStructuredResponse(payload) {
   return null;
 }
 
-function buildResponseResult(data) {
+function buildCameraReport(structured, formContext, evidenceFrames, mode) {
+  const source = structured?.cameraReport && typeof structured.cameraReport === 'object'
+    ? structured.cameraReport
+    : {};
+  const property = source.property && typeof source.property === 'object' ? source.property : {};
+  const sourceScope = source.scopeMethod && typeof source.scopeMethod === 'object' ? source.scopeMethod : {};
+  const videoNames = Array.isArray(formContext['camera-video']) ? formContext['camera-video'] : [];
+  const duration = formContext.videoDuration || 'Not provided';
+  const frameCount = evidenceFrames.length;
+  const reportUnavailable = Boolean(formContext.reviewError)
+    || ['fallback', 'openai-error-fallback', 'github-error-fallback'].includes(mode);
+  const method = formContext.videoReviewMethod || (frameCount
+    ? `Extracted ${frameCount} evenly spaced still frames. The complete video was not reviewed frame by frame.`
+    : 'No reviewable video stills were available to the AI.');
+  const reviewBasis = source.reviewBasis || (
+    reportUnavailable
+      ? `${method} The AI review did not complete; no property findings are issued.`
+      : method
+  );
+  const keyDetermination = source.keyDetermination || (
+    reportUnavailable
+      ? 'The video stills were prepared, but the AI review did not complete. No property condition conclusion or repair recommendation is issued.'
+      : frameCount
+        ? 'The supplied video was sampled for visual review. No structured finding was returned, so a reliable property condition conclusion cannot be made.'
+        : 'No reviewable inspection imagery was available. Supply accessible footage or stills before making a property condition or repair decision.'
+  );
+
+  return {
+    ...source,
+    overallCondition: source.overallCondition || 'UNABLE TO DETERMINE',
+    reviewBasis,
+    property: {
+      ...property,
+      address: property.address || formContext.address || 'Not provided',
+      client: property.client || formContext.name || 'Not provided',
+      reportId: property.reportId || 'Not provided',
+      inspectionDate: property.inspectionDate || 'Not provided',
+      reportDate: new Date().toISOString().slice(0, 10),
+      accessPoint: property.accessPoint || 'Not provided',
+      inspector: property.inspector || 'Not provided',
+      reviewer: property.reviewer || 'Not provided'
+    },
+    keyDetermination,
+    executiveSummary: source.executiveSummary || source.summary || (
+      reportUnavailable
+        ? 'The AI review did not complete; no visual condition assessment was produced.'
+        : structured?.summary || 'A reliable property condition conclusion cannot be made from the available evidence.'
+    ),
+    confidenceNote: source.confidenceNote || 'Confidence is limited by the sampled-frame review method and any visibility or coverage limitations.',
+    scopeMethod: {
+      ...sourceScope,
+      method: sourceScope.method || method,
+      limitationSummary: sourceScope.limitationSummary || (
+        reportUnavailable
+          ? 'The video was sampled, but the AI review did not complete.'
+          : frameCount
+            ? `Assessment is limited to ${frameCount} sampled still frames; unshown intervals and concealed conditions were not assessed.`
+            : 'No reviewable still frames were available.'
+      ),
+      fileInventory: Array.isArray(sourceScope.fileInventory) && sourceScope.fileInventory.length
+        ? sourceScope.fileInventory
+        : videoNames.map((file) => ({
+          file,
+          duration,
+          direction: 'Not provided',
+          counterRange: 'Not verified',
+          counterAtAccess: 'Not verified',
+          approximateLength: 'Not verified'
+        }))
+    },
+    findings: Array.isArray(source.findings) ? source.findings : [],
+    priorityItems: Array.isArray(source.priorityItems) ? source.priorityItems : [],
+    strategy: source.strategy && typeof source.strategy === 'object' ? source.strategy : {},
+    evidence: Array.isArray(source.evidence) ? source.evidence : [],
+    evidenceFrames,
+    nextActions: Array.isArray(source.nextActions) ? source.nextActions : [],
+    acceptanceCriteria: Array.isArray(source.acceptanceCriteria) ? source.acceptanceCriteria : [],
+    acceptanceNote: source.acceptanceNote || 'Not applicable unless cleaning or repair work is performed.',
+    finalDetermination: source.finalDetermination || source.keyDetermination || keyDetermination
+  };
+}
+
+function buildResponseResult(data, moduleName, formContext = {}, evidenceFrames = []) {
   const structured = parseStructuredResponse(data);
   const risk = String(structured?.urgencyLevel || structured?.urgency || 'Medium');
   const title = structured?.aiReviewSummary || 'AI review complete';
@@ -211,7 +298,15 @@ function buildResponseResult(data) {
     softCTA,
     disclaimer,
     links: links.length ? links : fallbackLinks,
-    cls
+    cls,
+    cameraReport: moduleName === 'sewer-camera-review'
+      ? buildCameraReport(
+        structured,
+        data.providerError ? { ...formContext, reviewError: true } : formContext,
+        evidenceFrames,
+        data.mode
+      )
+      : null
   };
 }
 
@@ -349,23 +444,56 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [], classN
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [evidenceFrames, setEvidenceFrames] = useState([]);
+  const frameUrlsRef = useRef([]);
+
+  useEffect(() => () => {
+    frameUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+  }, []);
 
   const handleChange = (name, value) => {
     setValues((current) => ({ ...current, [name]: value }));
   };
 
-  const handleButtonClick = async () => {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setIsLoading(true);
     setError('');
+    let moduleName = '';
+    let contextValues = {};
+    let submittedFrames = [];
 
     try {
-      const moduleName = getModuleName(button.actionName, window.location.pathname);
+      moduleName = getModuleName(button.actionName, window.location.pathname);
       const userType = typeof window !== 'undefined' ? (window.localStorage.getItem('pt_user_type') || 'Homeowner') : 'Homeowner';
       const fileFields = fields.filter((field) => field.type === 'file');
       const fileFieldNames = new Set(fileFields.map(getFieldName));
       const files = fileFields.flatMap((field) => values[getFieldName(field)] || []);
-      const contextValues = Object.fromEntries(Object.entries(values).filter(([name]) => !fileFieldNames.has(name)));
-      const contextLines = Object.entries(contextValues)
+      contextValues = Object.fromEntries(Object.entries(values).filter(([name]) => !fileFieldNames.has(name)));
+
+      let uploadFiles = files;
+      if (moduleName === 'sewer-camera-review') {
+        const videos = files.filter((file) => file.type.startsWith('video/'));
+        const extracted = [];
+        for (const video of videos) {
+          const result = await extractVideoFrames(video);
+          extracted.push(...result.frames);
+          contextValues.videoDuration = `${result.durationSeconds.toFixed(1)} seconds`;
+        }
+        submittedFrames = extracted;
+        frameUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+        frameUrlsRef.current = extracted.map((frame) => frame.previewUrl);
+        setEvidenceFrames(extracted);
+        uploadFiles = [...files, ...extracted.map((frame) => frame.file)];
+        contextValues.videoReviewMethod = videos.length
+          ? `The browser extracted ${extracted.length} evenly spaced still frames from ${videos.map((video) => video.name).join(', ')} at elapsed times ${extracted.map((frame) => frame.timestamp).join(', ')} for AI review. This is sampled-frame review, not a complete or frame-by-frame review.`
+          : 'No video file was available for visual review.';
+      }
+
+      const contextForAI = { ...contextValues };
+      delete contextForAI.email;
+      delete contextForAI.phone;
+      const contextLines = Object.entries(contextForAI)
         .filter(([, value]) => value && (Array.isArray(value) ? value.length : true))
         .map(([name, value]) => {
           const label = `${name}: ${Array.isArray(value) ? value.join(', ') : value}`;
@@ -378,7 +506,7 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [], classN
         uploadBody.append('module', moduleName);
         uploadBody.append('userType', userType);
         uploadBody.append('sourcePage', window.location.pathname);
-        files.forEach((file) => uploadBody.append('files', file));
+        uploadFiles.forEach((file) => uploadBody.append('files', file));
 
         const uploadResponse = await fetch('/api/uploads', { method: 'POST', body: uploadBody });
         const uploadData = await uploadResponse.json();
@@ -387,7 +515,7 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [], classN
         }
 
         contextValues[getFieldName(fileFields[0])] = files.map((file) => file.name);
-        contextLines.push(`Uploaded files: ${files.map((file) => file.name).join(', ')}`);
+        contextLines.push(`Uploaded original files: ${files.map((file) => file.name).join(', ')}`);
         uploadedFileIds = uploadData.files.map((file) => file.id);
       }
 
@@ -403,7 +531,7 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [], classN
               content: `Use the intake details below to provide a clear sewer or drain decision-center response.\n\nIntake details:\n${contextLines.join('\n') || 'No intake details provided.'}`
             }
           ],
-          formContext: contextValues,
+          formContext: contextForAI,
           uploadedFileIds
         })
       });
@@ -425,10 +553,20 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [], classN
       }
 
       if (data.providerError) setError(data.providerError);
-      setResult(buildResponseResult(data));
+      setResult(buildResponseResult(data, moduleName, contextValues, submittedFrames));
     } catch (requestError) {
       setError(requestError.message || 'Could not reach the AI service.');
-      setResult(buildFallbackResult(button.actionName, values));
+      if (moduleName === 'sewer-camera-review') {
+        contextValues.reviewError = true;
+        const fileField = fields.find((field) => field.type === 'file');
+        const reportContext = {
+          ...contextValues,
+          [fileField ? getFieldName(fileField) : 'camera-video']: (values[fileField ? getFieldName(fileField) : 'camera-video'] || []).map((file) => file.name)
+        };
+        setResult(buildResponseResult({}, moduleName, reportContext, submittedFrames));
+      } else {
+        setResult(buildFallbackResult(button.actionName, values));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -440,12 +578,12 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [], classN
   }, [result]);
 
   return (
-    <div className={`panel ${className}`.trim()}>
+    <form className={`panel ${className}`.trim()} onSubmit={handleSubmit}>
       <h2>{button.panelHeading || 'Guided intake'}</h2>
       {button.panelSubheading ? <p className="mini">{button.panelSubheading}</p> : null}
       <div className="form-section">
         {fields.map((field, index) => renderField(field, index, values, handleChange))}
-        <button className={`btn ${button.variant || ''}`} type="button" onClick={handleButtonClick} disabled={isLoading}>
+        <button className={`btn ${button.variant || ''}`} type="submit" disabled={isLoading}>
           {isLoading ? 'Reviewing...' : button.label}
         </button>
       </div>
@@ -462,8 +600,7 @@ export function ToolForm({ fields = [], button = {}, expectedOutput = [], classN
           </ul>
         </>
       ) : null}
-
       {resultMarkup}
-    </div>
+    </form>
   );
 }

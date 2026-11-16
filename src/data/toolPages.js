@@ -313,20 +313,15 @@ export const toolPages = [
   {
     slug: 'sewer-camera-review',
     title: 'Sewer Camera Video Review Intake',
-    lead: 'Share the footage markers, pipe material, defect location, depth, locate status, flow test status, and whether the camera reached the city main or septic connection.',
+    lead: 'Upload your sewer camera video and contact details to request a written review. Your phone number is optional.',
     fields: [
-      { label: 'Video upload', type: 'text' },
-      { label: 'Start and end footage markers', type: 'text' },
-      { label: 'Pipe material if known', type: 'text' },
-      { label: 'Location of defect', type: 'text' },
-      { label: 'Depth if known', type: 'text' },
-      { label: 'Was the line located?', type: 'text' },
-      { label: 'Was flow tested?', type: 'text' },
-      { label: 'Did the camera reach the city main or septic connection?', type: 'text' },
-      { label: 'Upload files', type: 'file' },
-      { label: 'Describe what happened', type: 'textarea' }
+      { label: 'Name', name: 'name', type: 'text', placeholder: 'Your full name', required: true, autoComplete: 'name' },
+      { label: 'Address', name: 'address', type: 'text', placeholder: 'Property address', required: true, autoComplete: 'street-address' },
+      { label: 'Email for written report', name: 'email', type: 'email', placeholder: 'you@example.com', required: true, autoComplete: 'email' },
+      { label: 'Phone number (optional)', name: 'phone', type: 'tel', placeholder: 'Best phone number', autoComplete: 'tel' },
+      { label: 'Upload sewer camera video', name: 'camera-video', type: 'file', accept: 'video/*', required: true }
     ],
-    button: { label: 'Get AI recommendation', variant: 'btn' }
+    button: { label: 'Request written review', panelHeading: 'Get a written camera review', variant: 'btn' }
   },
   {
     slug: 'symptom-checker',
