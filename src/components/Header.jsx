@@ -24,8 +24,8 @@ export function Header() {
 
         <Navbar />
 
-        <a href="tel:4842065551" className="btn nav-call">
-          <span className="nav-call-full">Call (484) 206-5551</span>
+        <a href="tel:+14848017242" className="btn nav-call">
+          <span className="nav-call-full">Call (484) 801-7242</span>
           <span className="nav-call-short" aria-hidden="true">Call</span>
         </a>
 
